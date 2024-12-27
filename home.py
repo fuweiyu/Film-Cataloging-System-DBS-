@@ -17,7 +17,7 @@ db_config = {
 def get_db_connection():
     return mysql.connector.connect(**db_config)
 
-#----------------------------------
+# ----------------------------------
 # MAIN PAGE
 # ----------------------------------
 @app.route("/")
@@ -39,14 +39,17 @@ def main_page():
 
     return render_template("main.html", movies=movies, is_logged_in=is_logged_in, username=username)
 
-
 # ----------------------------------
 # LOGIN
 # ----------------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    """
+    Login route:
+    User provides username + password, which are validated against the database.
+    """
     if request.method == "POST":
-        username_or_email = request.form['username_or_email']
+        username = request.form['username']
         password = request.form['password']
 
         # Hash the incoming password
@@ -55,33 +58,33 @@ def login():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Check for username or email match in Users table
-        cursor.execute("""
-            SELECT userId FROM Users WHERE userName = %s OR emailAddress = %s
-        """, (username_or_email, username_or_email))
+        # Step 1: Get userId from Users
+        cursor.execute("SELECT userId FROM Users WHERE userName = %s", (username,))
         user_row = cursor.fetchone()
 
         if not user_row:
-            flash("Invalid username/email or password", "danger")
+            # userName not found
+            flash("Invalid username or password", "danger")
             cursor.close()
             conn.close()
             return redirect("/login")
 
         user_id = user_row[0]
 
-        # Validate the password from UserPasswords table
+        # Step 2: Use userId to get passwordHash from UserPasswords
         cursor.execute("SELECT passwordHash FROM UserPasswords WHERE userId = %s", (user_id,))
         pass_row = cursor.fetchone()
 
         if pass_row and pass_row[0] == hashed_password:
             # Successful login
-            session['username'] = username_or_email  # Store username or email in session
+            session['username'] = username
             flash("Welcome back!", "success")
             cursor.close()
             conn.close()
-            return redirect("/welcome")
+            return redirect("/")
         else:
-            flash("Invalid username/email or password", "danger")
+            # Password does not match or no record in UserPasswords
+            flash("Invalid username or password", "danger")
 
         cursor.close()
         conn.close()
@@ -89,39 +92,16 @@ def login():
     return render_template("login.html")
 
 # ----------------------------------
-# WELCOME
-# ----------------------------------
-@app.route("/welcome")
-def welcome():
-    """
-    Simple welcome page after successful login.
-    """
-    if 'username' not in session:
-        return redirect("/")
-    return render_template("welcome.html")
-
-
-# ----------------------------------
-# LOGOUT
-# ----------------------------------
-@app.route("/logout")
-def logout():
-    """
-    Logs out the current user by clearing the session.
-    """
-    session.pop('username', None)
-    flash("You have been logged out.", "info")
-    return redirect("/")
-
-
-# ----------------------------------
 # SIGNUP
 # ----------------------------------
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
+    """
+    Signup route:
+    New users can create an account, and their credentials are saved in the database.
+    """
     if request.method == "POST":
         username = request.form['username']
-        email = request.form['email']  # New email field
         password = request.form['password']
 
         # Hash the password using SHA-256
@@ -135,7 +115,7 @@ def signup():
             cursor.execute("""
                 INSERT INTO Users (userName, emailAddress, userRole)
                 VALUES (%s, %s, %s)
-            """, (username, email, 'normal'))
+            """, (username, f"{username}@example.com", 'normal'))
             
             # 2) Get the auto-incremented userId
             new_user_id = cursor.lastrowid
@@ -151,8 +131,9 @@ def signup():
             return redirect("/login")
 
         except mysql.connector.Error as err:
+            # Handle duplicate entries or other SQL errors
             if err.errno == mysql.connector.errorcode.ER_DUP_ENTRY:
-                flash("Username or email already exists. Please choose different ones.", "danger")
+                flash("Username already exists. Please choose a different username.", "danger")
             else:
                 flash(f"Error: {err}", "danger")
 
@@ -162,9 +143,21 @@ def signup():
 
     return render_template("signup.html")
 
+# ----------------------------------
+# LOGOUT
+# ----------------------------------
+@app.route("/logout")
+def logout():
+    """
+    Logs out the current user by clearing the session.
+    """
+    session.pop('username', None)
+    flash("You have been logged out.", "info")
+    return redirect("/")
 
 # ----------------------------------
-# MAIN
+# RUN THE APPLICATION
 # ----------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
