@@ -11,7 +11,7 @@ db_config = {
     'host': 'localhost',  # Change this to your MySQL host
     'user': 'collaborator',  # Change this to your MySQL username
     'password': 'dbs2024',  # Change this to your MySQL password
-    'database': 'film_cataloging_db'  # Change this to your database name
+    'database': 'FilmCatalog'  # Change this to your database name
 }
 
 # Database Connection

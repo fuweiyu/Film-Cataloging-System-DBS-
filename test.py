@@ -4,7 +4,7 @@ db_config = {
     'host': 'localhost',
     'user': 'collaborator',
     'password': 'dbs2024',
-    'database': 'film_cataloging_db'
+    'database': 'FilmCatalog'
 }
 
 try:
