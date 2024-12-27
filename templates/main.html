@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movie Catalog</title>
     <style>
+        :root {
+            --tab-section-width: 80%; /* Adjust the total width of the tab section */
+            --tab-buttons-width: 60%; /* Adjust the total width occupied by the tab buttons */
+        }
+
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            background-color: #f4f4f9;
         }
 
         .header {
@@ -22,9 +26,9 @@
             padding: 10px 20px;
         }
 
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
+        .logo img {
+            height: 50px; /* Adjust this to control the size */
+            width: auto; /* Maintain the aspect ratio */
         }
 
         .header a {
@@ -40,8 +44,8 @@
             background-color: #555;
         }
 
-        .container {
-            max-width: 800px;
+        .tabs-container {
+            max-width: var(--tab-section-width);
             margin: 20px auto;
             background: white;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -49,10 +53,49 @@
             padding: 20px;
         }
 
+        .tabs {
+            display: flex;
+            justify-content: center;
+            width: var(--tab-buttons-width);
+            margin: 0 auto 20px;
+        }
+
+        .tab {
+            flex-grow: 1; /* Tabs divide the total width equally */
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 5px;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .tab:last-child {
+            margin-right: 0;
+        }
+
+        .tab:hover {
+            background-color: #45a049;
+        }
+
+        .tab.active {
+            background-color: #333;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 10px 0;
         }
 
         th, td {
@@ -69,18 +112,31 @@
         tr:hover {
             background-color: #f1f1f1;
         }
-
-        footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #666;
-        }
     </style>
+    <script>
+        function showTab(tabIndex) {
+            const tabs = document.querySelectorAll('.tab-content');
+            const tabButtons = document.querySelectorAll('.tab');
+            tabs.forEach((tab, index) => {
+                tab.classList.remove('active');
+                tabButtons[index].classList.remove('active');
+                if (index === tabIndex) {
+                    tab.classList.add('active');
+                    tabButtons[index].classList.add('active');
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showTab(0); // Show the first tab by default
+        });
+    </script>
 </head>
 <body>
     <div class="header">
-        <h1>Movie Catalog</h1>
+        <div class="logo">
+            <img src="/static/nycuflix.png" alt="Movie Catalog Logo">
+        </div>
         {% if is_logged_in %}
             <a href="/logout">Logout ({{ username }})</a>
         {% else %}
@@ -88,22 +144,29 @@
         {% endif %}
     </div>
 
-    <div class="container">
-        <table>
-            <tr>
-                <th>Title</th>
-                <th>Overview</th>
-            </tr>
-            {% for movie in movies %}
-            <tr>
-                <td>{{ movie['title'] }}</td>
-                <td>{{ movie['overview'] }}</td>
-            </tr>
+    <div class="tabs-container">
+        <div class="tabs">
+            {% for i in range(tabs|length) %}
+            <div class="tab" onclick="showTab({{ i }})">Tab {{ i + 1 }}</div>
             {% endfor %}
-        </table>
-    </div>
+        </div>
 
-    <footer>&copy; 2024 Your Project. All rights reserved.</footer>
+        {% for tab_movies in tabs %}
+        <div class="tab-content">
+            <table>
+                <tr>
+                    <th>Title</th>
+                    <th>Overview</th>
+                </tr>
+                {% for movie in tab_movies %}
+                <tr>
+                    <td>{{ movie['title'] }}</td>
+                    <td>{{ movie['overview'] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endfor %}
+    </div>
 </body>
 </html>
-

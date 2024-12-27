@@ -23,22 +23,22 @@ def get_db_connection():
 @app.route("/")
 def main_page():
     """
-    Default main page showing the movie catalog.
+    Main page with tabs displaying lists of random movies.
     """
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    query = "SELECT title, overview FROM Movies ORDER BY RAND() LIMIT 10;"
-    cursor.execute(query)
-    movies = cursor.fetchall()
+    
+    # Generate random movies for each tab
+    tabs = []
+    num_tabs = 5  # Number of tabs
+    for _ in range(num_tabs):
+        cursor.execute("SELECT title, overview FROM Movies ORDER BY RAND() LIMIT 10;")
+        tabs.append(cursor.fetchall())
+
     cursor.close()
     conn.close()
 
-    # Check if the user is logged in and pass username to template
-    is_logged_in = 'username' in session
-    username = session['username'] if is_logged_in else None
-
-    return render_template("main.html", movies=movies, is_logged_in=is_logged_in, username=username)
-
+    return render_template("main.html", tabs=tabs)
 
 # ----------------------------------
 # LOGIN
