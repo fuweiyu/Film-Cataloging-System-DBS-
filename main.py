@@ -38,7 +38,11 @@ def main_page():
     cursor.close()
     conn.close()
 
-    return render_template("main.html", tabs=tabs)
+    # Check if the user is logged in and pass username to template
+    is_logged_in = 'username' in session
+    username = session['username'] if is_logged_in else None
+
+    return render_template("main.html", tabs=tabs, is_logged_in=is_logged_in, username=username)
 
 # ----------------------------------
 # LOGIN
