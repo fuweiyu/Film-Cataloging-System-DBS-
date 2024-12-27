@@ -121,7 +121,7 @@ def logout():
 def signup():
     if request.method == "POST":
         username = request.form['username']
-        email = request.form['email']  # New email field
+        email = request.form['email']
         password = request.form['password']
 
         # Hash the password using SHA-256
@@ -131,37 +131,53 @@ def signup():
         cursor = conn.cursor()
 
         try:
-            # 1) Insert into Users table
+            # Check if the username or email already exists
+            cursor.execute("""
+                SELECT userName, emailAddress FROM Users WHERE userName = %s OR emailAddress = %s
+            """, (username, email))
+            existing_user = cursor.fetchone()
+
+            if existing_user:
+                # Only trigger the appropriate message
+                if existing_user[0] == username and existing_user[1] == email:
+                    flash("Username and email already exist. Please use different ones.", "danger")
+                elif existing_user[0] == username:
+                    flash("Username already exists. Please choose a different one.", "danger")
+                elif existing_user[1] == email:
+                    flash("Email already exists. Please use a different email.", "danger")
+                
+                # Stop further execution
+                return redirect("/signup")
+
+            # Insert new user into Users table
             cursor.execute("""
                 INSERT INTO Users (userName, emailAddress, userRole)
                 VALUES (%s, %s, %s)
             """, (username, email, 'normal'))
-            
-            # 2) Get the auto-incremented userId
+
+            # Get the auto-incremented userId
             new_user_id = cursor.lastrowid
 
-            # 3) Insert into UserPasswords
+            # Insert into UserPasswords table
             cursor.execute("""
                 INSERT INTO UserPasswords (userId, passwordHash)
                 VALUES (%s, %s)
             """, (new_user_id, hashed_password))
 
             conn.commit()
+
+            # Flash success message and redirect to login
             flash("Account created successfully! Please log in.", "success")
             return redirect("/login")
 
         except mysql.connector.Error as err:
-            if err.errno == mysql.connector.errorcode.ER_DUP_ENTRY:
-                flash("Username or email already exists. Please choose different ones.", "danger")
-            else:
-                flash(f"Error: {err}", "danger")
+            flash(f"Database error: {err}", "danger")
 
         finally:
             cursor.close()
             conn.close()
 
     return render_template("signup.html")
-
 
 # ----------------------------------
 # MAIN
