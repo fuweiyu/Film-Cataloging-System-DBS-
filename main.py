@@ -79,7 +79,7 @@ def login():
             flash("Welcome back!", "success")
             cursor.close()
             conn.close()
-            return redirect("/welcome")
+            return redirect("/")
         else:
             flash("Invalid username/email or password", "danger")
 
