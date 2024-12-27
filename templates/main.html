@@ -6,6 +6,9 @@
     <title>Movie Catalog</title>
     <style>
         :root {
+            --header-color: #00298f; /* Primary header and tab color */
+            --header-hover-color: #1c44a3; /* Hover color for tabs */
+            --active-tab-color: #5774b6; /* Active tab color */
             --tab-section-width: 80%; /* Adjust the total width of the tab section */
             --tab-buttons-width: 60%; /* Adjust the total width occupied by the tab buttons */
         }
@@ -21,7 +24,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #4CAF50;
+            background-color: var(--header-color);
             color: white;
             padding: 10px 20px;
         }
@@ -63,7 +66,7 @@
         .tab {
             flex-grow: 1; /* Tabs divide the total width equally */
             padding: 10px 20px;
-            background-color: #4CAF50;
+            background-color: var(--header-color);
             color: white;
             cursor: pointer;
             margin-right: 5px;
@@ -77,11 +80,11 @@
         }
 
         .tab:hover {
-            background-color: #45a049;
+            background-color: var(--header-hover-color);
         }
 
         .tab.active {
-            background-color: #333;
+            background-color: var(--active-tab-color);
         }
 
         .tab-content {
@@ -105,7 +108,7 @@
         }
 
         th {
-            background-color: #4CAF50;
+            background-color: var(--header-color);
             color: white;
         }
 
@@ -143,7 +146,6 @@
             <a href="/login">Login/Sign Up</a>
         {% endif %}
     </div>
-    
 
     <div class="tabs-container">
         <div class="tabs">
