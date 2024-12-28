@@ -5,26 +5,49 @@ import hashlib  # for SHA-256 hashing
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Replace with a secure, random value
 
-# Database Configuration
-db_config = {
-    'host': 'localhost',       # Change to your MySQL host
-    'user': 'collaborator',    # Change to your MySQL username
-    'password': 'dbs2024',     # Change to your MySQL password
-    'database': 'FilmCatalog'  # Change to your database name
-}
+# List of database configurations
+db_configs = [
+    {
+        'host': '172.17.0.2',     # Fallback host
+        'user': 'FernanShen',     # Fallback username
+        'password': '012002',     # Fallback password
+        'database': 'FilmCatalog' # Fallback database name
+    },
+    {
+        'host': 'localhost',     # Change to your MySQL host
+        'user': 'collaborator',  # Change to your MySQL username
+        'password': 'dbs2024',   # Change to your MySQL password
+        'database': 'FilmCatalog'# Change to your database name
+    }
+]
 
 # Helper function to get a DB connection
 def get_db_connection():
-    return mysql.connector.connect(**db_config)
+    for config in db_configs:
+        try:
+            connection = mysql.connector.connect(**config)
+            print(f"Connected to database using {config['user']}@{config['host']}")
+            return connection
+        except mysql.connector.Error as err:
+            print(f"Failed to connect using {config['user']}@{config['host']}: {err}")
+    raise Exception("All database connection attempts failed.")
+
+# ----------------------------------
+# USER INJECTOR
+# ----------------------------------
+@app.context_processor
+def inject_user():
+    is_logged_in = 'user_id' in session
+    username = session.get('username', "Guest")
+    return {'is_logged_in': is_logged_in, 'username': username}
+
+
 
 #----------------------------------
 # MAIN PAGE
 # ----------------------------------
 @app.route("/")
 def main_page():
-    """
-    Main page with tabs displaying lists of random movies.
-    """
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     
@@ -32,7 +55,12 @@ def main_page():
     tabs = []
     num_tabs = 5  # Number of tabs
     for _ in range(num_tabs):
-        cursor.execute("SELECT title, overview FROM Movies ORDER BY RAND() LIMIT 10;")
+        cursor.execute("""
+            SELECT movieId, title, overview
+            FROM Movies
+            ORDER BY RAND()
+            LIMIT 10;
+        """)
         tabs.append(cursor.fetchall())
 
     cursor.close()
@@ -44,6 +72,7 @@ def main_page():
 
     return render_template("main.html", tabs=tabs, is_logged_in=is_logged_in, username=username)
 
+
 # ----------------------------------
 # LOGIN
 # ----------------------------------
@@ -53,15 +82,15 @@ def login():
         username_or_email = request.form['username_or_email']
         password = request.form['password']
 
-        # Hash the incoming password
+        # Hash the password
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Check for username or email match in Users table
+        # Check user credentials
         cursor.execute("""
-            SELECT userId FROM Users WHERE userName = %s OR emailAddress = %s
+            SELECT userId, userName FROM Users WHERE userName = %s OR emailAddress = %s
         """, (username_or_email, username_or_email))
         user_row = cursor.fetchone()
 
@@ -71,15 +100,16 @@ def login():
             conn.close()
             return redirect("/login")
 
-        user_id = user_row[0]
+        user_id, username = user_row
 
-        # Validate the password from UserPasswords table
+        # Validate password
         cursor.execute("SELECT passwordHash FROM UserPasswords WHERE userId = %s", (user_id,))
         pass_row = cursor.fetchone()
 
         if pass_row and pass_row[0] == hashed_password:
-            # Successful login
-            session['username'] = username_or_email  # Store username or email in session
+            session['user_id'] = user_id
+            session['username'] = username  # Store username only when logged in
+            session.permanent = True
             flash("Welcome back!", "success")
             cursor.close()
             conn.close()
@@ -91,6 +121,7 @@ def login():
         conn.close()
 
     return render_template("login.html")
+
 
 # ----------------------------------
 # WELCOME
@@ -183,8 +214,130 @@ def signup():
 
     return render_template("signup.html")
 
+# FERNAN MODIFICO ESTA PARTE
+# ----------------------------------
+# SEARCH
+# ----------------------------------
+@app.route("/search", methods=["GET"])
+def search():
+    # Check if the user is logged in
+    is_logged_in = 'user_id' in session
+    username = session.get('username')
+
+    query = request.args.get("query", "").strip()
+    if not query:
+        flash("Please enter a search term.", "warning")
+        return redirect("/")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Search for movies by title
+    search_query = f"%{query}%"
+    cursor.execute("""
+        SELECT DISTINCT Movies.movieId, Movies.title, Movies.overview
+        FROM Movies
+        WHERE Movies.title LIKE %s
+    """, (search_query,))
+    title_matches = cursor.fetchall()
+
+    # Search for movies by keywords
+    cursor.execute("""
+        SELECT DISTINCT Movies.movieId, Movies.title, Movies.overview
+        FROM Movies
+        JOIN MovieKeywords ON Movies.movieId = MovieKeywords.movieId
+        JOIN Keywords ON MovieKeywords.keywordId = Keywords.keywordId
+        WHERE Keywords.name LIKE %s
+    """, (search_query,))
+    keyword_matches = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    # Remove duplicates (if a movie matches both title and keyword)
+    movie_ids = set()
+    combined_results = []
+    for movie in title_matches + keyword_matches:
+        if movie["movieId"] not in movie_ids:  # Use movieId instead of id
+            movie_ids.add(movie["movieId"])
+            combined_results.append(movie)
+            
+
+    return render_template("search.html", query=query, search_results=combined_results, title_matches=title_matches, keyword_matches=keyword_matches, is_logged_in=is_logged_in, username=username)
+
+# ----------------------------------
+# MOVIE DETAILS
+# ----------------------------------
+@app.route("/movie/<int:movie_id>", methods=["GET", "POST"])
+def movie_detail(movie_id):
+    # Check if user is logged in
+    is_logged_in = 'user_id' in session
+    username = session.get('username')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch movie details
+    cursor.execute("""
+        SELECT movieId, title, tagline, overview, releaseDate, language, runtime, budget
+        FROM Movies
+        WHERE movieId = %s
+    """, (movie_id,))
+    movie = cursor.fetchone()
+
+    if not movie:
+        cursor.close()
+        conn.close()
+        flash("Movie not found!", "danger")
+        return redirect("/search")
+
+    # Handle comment submission
+    if request.method == "POST":
+        user_id = session.get("user_id")
+        comment_text = request.form.get("comment")
+
+        # Debugging logs
+        print("User ID:", user_id)
+        print("Comment Text:", comment_text)
+
+        if not user_id:
+            flash("You need to be logged in to post comments.", "warning")
+            return redirect("/login")
+
+        if comment_text.strip():
+            cursor.execute("""
+                INSERT INTO Comments (movieId, userId, commentText)
+                VALUES (%s, %s, %s)
+            """, (movie_id, user_id, comment_text.strip()))
+            conn.commit()
+            flash("Comment added successfully!", "success")
+        else:
+            flash("Comment cannot be empty.", "danger")
+
+    # Fetch comments for the movie
+    cursor.execute("""
+        SELECT c.commentText, c.timeStamp, u.userName
+        FROM Comments c
+        JOIN Users u ON c.userId = u.userId
+        WHERE c.movieId = %s
+        ORDER BY c.timeStamp DESC
+    """, (movie_id,))
+    comments = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template("movie.html", movie=movie, comments=comments, is_logged_in=is_logged_in, username=username)
+
+
+
+
+
+
 # ----------------------------------
 # MAIN
 # ----------------------------------
+
+
 if __name__ == "__main__":
     app.run(debug=True)

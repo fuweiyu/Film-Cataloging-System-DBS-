@@ -20,6 +20,7 @@
             background-color: #f4f4f9;
         }
 
+        /* FERNAN MODIFICO DESDE ACA */
         .header {
             display: flex;
             justify-content: space-between;
@@ -29,10 +30,32 @@
             padding: 10px 20px;
         }
 
-        .logo img {
-            height: 50px; /* Adjust this to control the size */
-            width: auto; /* Maintain the aspect ratio */
+        .logo a {
+            text-decoration: none; /* Remove underline */
+            color: inherit; /* Inherit text color */
+            display: inline-block; /* Properly wrap the image */
+            background: none !important; /* Forcefully remove background */
+            border: none; /* Remove any border */
+            padding: 0; /* Remove any extra padding */
+            margin: 0; /* Remove extra margin */
         }
+
+        .logo img {
+            display: block; 
+            background: none; 
+            border: none;
+            padding: 0;
+            margin: 0; 
+            height: 50px; 
+            width: auto; 
+        }
+
+        .logo a:focus, 
+        .logo a:hover {
+            outline: none; /* Remove the outline on focus or hover */
+        }
+
+        /* FERNAN MODIFICO hasta ACA */
 
         .header a {
             color: white;
@@ -46,6 +69,43 @@
         .header a:hover {
             background-color: #555;
         }
+
+        /* FERNAN MODIFICO DESDE ACA */
+        .search-container {
+            max-width: 600px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        .search-container form {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .search-container input[type="text"] {
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 200px;
+        }
+
+        .search-container button {
+            padding: 8px 16px;
+            font-size: 14px;
+            background-color: white;
+            color: var(--header-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .search-container button:hover {
+            background-color: #f1f1f1;
+        }
+        /* FERNAN MODIFICO hasta ACA */
 
         .tabs-container {
             max-width: var(--tab-section-width);
@@ -115,6 +175,15 @@
         tr:hover {
             background-color: #f1f1f1;
         }
+
+        .search-results {
+            margin-top: 20px;
+        }
+
+        .search-results h3 {
+            text-align: center;
+            color: var(--header-color);
+        }
     </style>
     <script>
         function showTab(tabIndex) {
@@ -129,16 +198,28 @@
                 }
             });
         }
-
+    
         document.addEventListener('DOMContentLoaded', () => {
             showTab(0); // Show the first tab by default
         });
     </script>
+    
 </head>
 <body>
+
+
+<!-- FERNAN MODIFICO DESDE ACA -->
     <div class="header">
         <div class="logo">
-            <img src="/static/nycuflix.png" alt="Movie Catalog Logo">
+            <a href="/">
+                <img src="/static/nycuflix.png" alt="Movie Catalog Logo">
+            </a>
+        </div>
+        <div class="search-container">
+            <form method="GET" action="/search" style="display: flex; align-items: center;">
+                <input type="text" id="search-query" name="query" placeholder="Search for movies..." required style="width: 300px; padding: 5px;">
+                <button type="submit" style="margin-left: 10px; padding: 5px 10px;">Search</button>
+            </form>
         </div>
         {% if is_logged_in %}
             <a href="/logout">Logout ({{ username }})</a>
@@ -147,21 +228,15 @@
         {% endif %}
     </div>
 
-    <div class="tabs-container">
-        <div class="tabs">
-            {% for i in range(tabs|length) %}
-            <div class="tab" onclick="showTab({{ i }})">Tab {{ i + 1 }}</div>
-            {% endfor %}
-        </div>
-
-        {% for tab_movies in tabs %}
-        <div class="tab-content">
+    {% if search_results %}
+        <div class="search-results">
+            <h3>Search Results</h3>
             <table>
                 <tr>
                     <th>Title</th>
                     <th>Overview</th>
                 </tr>
-                {% for movie in tab_movies %}
+                {% for movie in search_results %}
                 <tr>
                     <td>{{ movie['title'] }}</td>
                     <td>{{ movie['overview'] }}</td>
@@ -169,7 +244,35 @@
                 {% endfor %}
             </table>
         </div>
-        {% endfor %}
-    </div>
+    {% endif %}
+
+    {% if not search_results and tabs %}
+        <div class="tabs-container">
+            <div class="tabs">
+    {% for i in range(tabs|length) %}
+    <div class="tab" onclick="showTab({{ i }})">Tab {{ i + 1 }}</div>
+    {% endfor %}
+</div>
+
+
+            {% for tab_movies in tabs %}
+            <div class="tab-content">
+                <table>
+                    <tr>
+                        <th>Title</th>
+                        <th>Overview</th>
+                    </tr>
+                    {% for movie in tab_movies %}
+                    <tr>
+                        <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                        <td>{{ movie['overview'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 </body>
 </html>
+<!-- FERNAN MODIFICO hasta ACA -->
