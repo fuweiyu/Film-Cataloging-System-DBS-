@@ -282,7 +282,7 @@
                 </tr>
                 {% for movie in search_results %}
                 <tr>
-                    <td>{{ movie['title'] }}</td>
+                    <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
                     <td>{{ movie['overview'] }}</td>
                 </tr>
                 {% endfor %}
@@ -291,30 +291,66 @@
     {% endif %}
 
     {% if not search_results and tabs %}
-        <div class="tabs-container">
-            <div class="tabs">
-                {% for i in range(tabs|length) %}
-                    <div class="tab" onclick="showTab({{ i }})">Tab {{ i + 1 }}</div>
-                {% endfor %}
-            </div>
-
-            {% for tab_movies in tabs %}
-            <div class="tab-content">
-                <table>
-                    <tr>
-                        <th>Title</th>
-                        <th>Overview</th>
-                    </tr>
-                    {% for movie in tab_movies %}
-                    <tr>
-                        <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
-                        <td>{{ movie['overview'] }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-            {% endfor %}
-        </div>
     {% endif %}
+
+    <div class="tabs-container">
+        <div class="tabs">
+            <div class="tab active" onclick="showTab(0)">Rating</div>
+            <div class="tab" onclick="showTab(1)">Random</div>
+            <div class="tab" onclick="showTab(2)">Trending</div> <!-- New Trending Tab -->
+        </div>
+        
+        <!-- Tab Content for Rating -->
+        <div class="tab-content active">
+            <table>
+                <tr>
+                    <th>Title</th>
+                    <th>Rating</th>
+                    <th>Description</th>
+                </tr>
+                {% for movie in rating_table %}
+                <tr>
+                    <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                    <td>{{ movie['voteAverage'] }}</td>
+                    <td>{{ movie['overview'] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        
+        <!-- Tab Content for Random -->
+        <div class="tab-content">
+            <table>
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                </tr>
+                {% for movie in random_table %}
+                <tr>
+                    <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                    <td>{{ movie['overview'] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        
+        <!-- Tab Content for Trending -->
+        <div class="tab-content">
+            <table>
+                <tr>
+                    <th>Title</th>
+                    <th>Release Year</th>
+                    <th>Description</th>
+                </tr>
+                {% for movie in trending_table %}
+                <tr>
+                    <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                    <td>{{ movie['releaseYear'] }}</td>
+                    <td>{{ movie['overview'] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
 </body>
 </html>

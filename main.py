@@ -50,18 +50,41 @@ def inject_user():
 def main_page():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    
-    # Generate random movies for each tab
-    tabs = []
-    num_tabs = 5  # Number of tabs
-    for _ in range(num_tabs):
-        cursor.execute("""
-            SELECT movieId, title, overview
+
+    # Tab 1: Ratings
+    cursor.execute("""
+        SELECT movieId, title, voteAverage, voteCount, overview,
+            (voteAverage * voteCount) / (voteCount + 1) AS weighted_score
+        FROM Movies
+        WHERE voteAverage IS NOT NULL AND voteCount IS NOT NULL
+        ORDER BY weighted_score DESC
+        LIMIT 10;
+    """)
+    rating_table = cursor.fetchall()
+
+    # Tab 2: Random Movies
+    cursor.execute("""
+        SELECT movieId, title, overview 
+        FROM Movies 
+        ORDER BY RAND() 
+        LIMIT 10;
+    """)
+    random_table = cursor.fetchall()
+
+     # Tab 3: Trending Movies
+    cursor.execute("""
+        SELECT movieId, title, YEAR(releaseDate) AS releaseYear, overview
+        FROM (
+            SELECT movieId, title, releaseDate, YEAR(releaseDate) AS releaseYear, overview, voteAverage, voteCount
             FROM Movies
-            ORDER BY RAND()
-            LIMIT 10;
-        """)
-        tabs.append(cursor.fetchall())
+            WHERE releaseDate IS NOT NULL AND voteAverage IS NOT NULL AND voteCount IS NOT NULL
+            ORDER BY releaseDate DESC
+            LIMIT 20
+        ) AS LatestMovies
+        ORDER BY voteAverage DESC, voteCount DESC;
+    """)
+    trending_table = cursor.fetchall()
+
 
     cursor.close()
     conn.close()
@@ -69,8 +92,14 @@ def main_page():
     # Check if the user is logged in and pass username to template
     is_logged_in = 'username' in session
     username = session['username'] if is_logged_in else None
+    return render_template(
+        "main.html",
+        rating_table=rating_table,
+        random_table=random_table,
+        trending_table=trending_table,
+        is_logged_in=is_logged_in, 
+        username=username)
 
-    return render_template("main.html", tabs=tabs, is_logged_in=is_logged_in, username=username)
 
 
 # ----------------------------------
