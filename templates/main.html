@@ -254,6 +254,9 @@
         </div>
         {% if is_logged_in %}
             <a href="/logout">Logout ({{ username }})</a>
+			{% if display_role %}
+				<span style="font-weight: bold; color: red;">[ADMIN]</span>
+			{% endif %}
         {% else %}
             <a href="/login">Login/Sign Up</a>
         {% endif %}
@@ -298,6 +301,7 @@
             <div class="tab active" onclick="showTab(0)">Rating</div>
             <div class="tab" onclick="showTab(1)">Random</div>
             <div class="tab" onclick="showTab(2)">Trending</div> <!-- New Trending Tab -->
+            <div class="tab" onclick="showTab(3)">Popular</div> <!-- New Popular Tab -->
         </div>
         
         <!-- Tab Content for Rating -->
@@ -351,6 +355,24 @@
                 {% endfor %}
             </table>
         </div>
+        <!-- Tab Content for Popular -->
+        <div class="tab-content">
+            <table>
+                <tr>
+                    <th>Title</th>
+                    <th>Comments Count</th>
+                    <th>Description</th>
+                </tr>
+                {% for movie in popular_table %}
+                <tr>
+                    <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                    <td>{{ movie['totalComments'] }}</td>
+                    <td>{{ movie['overview'] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
     </div>
 </body>
 </html>

@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, flash, session, url_for
 import mysql.connector
 import hashlib  # for SHA-256 hashing
+from datetime import datetime, timedelta #Get current time
+
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Replace with a secure, random value
@@ -39,9 +41,17 @@ def get_db_connection():
 def inject_user():
     is_logged_in = 'user_id' in session
     username = session.get('username', "Guest")
-    return {'is_logged_in': is_logged_in, 'username': username}
+    user_role = session.get('user_role', 'normal')  # default to 'normal'
 
+    # We'll add a "display_role" only if user_role == "admin"
+    display_role = user_role if user_role == "admin" else None
 
+    return {
+        'is_logged_in': is_logged_in, 
+        'username': username,
+        'user_role': user_role,
+        'display_role': display_role
+    }
 
 #----------------------------------
 # MAIN PAGE
@@ -72,18 +82,28 @@ def main_page():
     random_table = cursor.fetchall()
 
      # Tab 3: Trending Movies
+    one_week_ago = datetime.now() - timedelta(days=7)
     cursor.execute("""
-        SELECT movieId, title, YEAR(releaseDate) AS releaseYear, overview
-        FROM (
-            SELECT movieId, title, releaseDate, YEAR(releaseDate) AS releaseYear, overview, voteAverage, voteCount
-            FROM Movies
-            WHERE releaseDate IS NOT NULL AND voteAverage IS NOT NULL AND voteCount IS NOT NULL
-            ORDER BY releaseDate DESC
-            LIMIT 20
-        ) AS LatestMovies
-        ORDER BY voteAverage DESC, voteCount DESC;
-    """)
+        SELECT YEAR(releaseDate) AS releaseYear, m.movieId, m.title, m.overview, COUNT(c.commentId) AS commentCount
+        FROM Movies m
+        JOIN Comments c ON m.movieId = c.movieId
+        WHERE c.timeStamp >= %s
+        GROUP BY m.movieId, m.title, m.overview
+        ORDER BY commentCount DESC
+        LIMIT 15;
+    """, (one_week_ago,))
     trending_table = cursor.fetchall()
+
+    # Tab 4: Popular Movies (based on  all time comments)
+    cursor.execute("""
+        SELECT m.movieId, m.title, m.overview, COUNT(c.commentId) AS totalComments
+        FROM Movies m
+        LEFT JOIN Comments c ON m.movieId = c.movieId
+        GROUP BY m.movieId, m.title, m.overview
+        ORDER BY totalComments DESC
+        LIMIT 15;
+    """)
+    popular_table = cursor.fetchall()
 
 
     cursor.close()
@@ -97,6 +117,7 @@ def main_page():
         rating_table=rating_table,
         random_table=random_table,
         trending_table=trending_table,
+        popular_table=popular_table,
         is_logged_in=is_logged_in, 
         username=username)
 
@@ -117,11 +138,11 @@ def login():
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
 
         conn = get_db_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)  # dictionary=True to fetch columns by name
 
         # Check if user exists
         cursor.execute("""
-            SELECT userId, userName 
+            SELECT userId, userName, userRole
             FROM Users 
             WHERE userName = %s OR emailAddress = %s
         """, (username_or_email, username_or_email))
@@ -133,27 +154,28 @@ def login():
             conn.close()
             return redirect(url_for("login", next=next_page) if next_page else url_for("login"))
 
-        user_id, username = user_row
+        user_id = user_row["userId"]
+        username = user_row["userName"]
+        user_role = user_row["userRole"]  # 'normal', 'admin', or 'moderator' (not used in your current logic)
 
         # Validate password
         cursor.execute("SELECT passwordHash FROM UserPasswords WHERE userId = %s", (user_id,))
         pass_row = cursor.fetchone()
 
-        if pass_row and pass_row[0] == hashed_password:
+        if pass_row and pass_row["passwordHash"] == hashed_password:
             # Successful login
             session['user_id'] = user_id
             session['username'] = username
+            session['user_role'] = user_role  # store role in session
             session.permanent = True
             cursor.close()
             conn.close()
 
             # If we have a next page, redirect to that movie; otherwise, main page
-            # After successful login...
             try:
                 movie_id = int(next_page)
                 return redirect(url_for("movie_detail", movie_id=movie_id))
             except (ValueError, TypeError):
-                # Not a valid integer, go to main page
                 return redirect("/")
         else:
             flash("Invalid username/email or password", "danger")
@@ -349,7 +371,7 @@ def movie_detail(movie_id):
 
     # Fetch comments for the movie
     cursor.execute("""
-        SELECT c.commentText, c.timeStamp, u.userName
+        SELECT c.commentId, c.commentText, c.timeStamp, u.userName
         FROM Comments c
         JOIN Users u ON c.userId = u.userId
         WHERE c.movieId = %s
@@ -357,11 +379,112 @@ def movie_detail(movie_id):
     """, (movie_id,))
     comments = cursor.fetchall()
 
+
     cursor.close()
     conn.close()
 
     return render_template("movie.html", movie=movie, comments=comments, is_logged_in=is_logged_in, username=username)
+# ----------------------------------
+# EDIT COMMENT 
+# ----------------------------------
+@app.route("/edit_comment/<int:comment_id>", methods=["POST"])
+def edit_comment(comment_id):
+    if 'user_id' not in session:
+        flash("You must be logged in to edit a comment.", "warning")
+        return redirect("/login")
 
+    user_id = session['user_id']
+    updated_comment = request.form.get("comment").strip()
+    movie_id = request.form.get("movie_id")
+
+    if not updated_comment:
+        flash("Comment cannot be empty.", "danger")
+        return redirect(f"/movie/{movie_id}")
+
+    # Connect
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # We only allow the owner of the comment or an admin to edit
+    # => Check who owns this comment and the user_role
+    cursor.execute("SELECT userId FROM Comments WHERE commentId = %s", (comment_id,))
+    row = cursor.fetchone()
+    if not row:
+        flash("Comment not found.", "danger")
+        cursor.close()
+        conn.close()
+        return redirect(f"/movie/{movie_id}")
+
+    comment_owner_id = row["userId"]
+    user_role = session.get("user_role", "normal")
+
+    # If not admin and not the comment owner -> no permission
+    if user_id != comment_owner_id and user_role != "admin":
+        flash("You do not have permission to edit this comment.", "danger")
+        cursor.close()
+        conn.close()
+        return redirect(f"/movie/{movie_id}")
+
+    # Otherwise, update the comment
+    cursor.execute("""
+        UPDATE Comments
+        SET commentText = %s, timeStamp = NOW()
+        WHERE commentId = %s
+    """, (updated_comment, comment_id))
+    conn.commit()
+
+    flash("Comment updated successfully!", "success")
+    cursor.close()
+    conn.close()
+
+    return redirect(f"/movie/{movie_id}")
+    
+# ----------------------------------
+# DELETE COMMENT 
+# ----------------------------------
+@app.route("/delete_comment/<int:comment_id>", methods=["POST"])
+def delete_comment(comment_id):
+    # Must be logged in
+    if 'user_id' not in session:
+        flash("You must be logged in to delete a comment.", "warning")
+        return redirect("/login")
+
+    user_id = session['user_id']
+    user_role = session.get("user_role", "normal")
+    movie_id = request.form.get("movie_id")  # We pass the movieId via hidden field
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Check who owns this comment
+    cursor.execute("SELECT userId FROM Comments WHERE commentId = %s", (comment_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        flash("Comment not found or already deleted.", "danger")
+        cursor.close()
+        conn.close()
+        return redirect(f"/movie/{movie_id}")
+
+    comment_owner_id = row["userId"]
+
+    # If not admin and not the comment owner -> no permission
+    if user_id != comment_owner_id and user_role != "admin":
+        flash("You do not have permission to delete this comment.", "danger")
+        cursor.close()
+        conn.close()
+        return redirect(f"/movie/{movie_id}")
+
+    # Otherwise, we can delete
+    cursor.execute("DELETE FROM Comments WHERE commentId = %s", (comment_id,))
+    conn.commit()
+
+    flash("Comment deleted successfully!", "success")
+    cursor.close()
+    conn.close()
+
+    return redirect(f"/movie/{movie_id}")
+    
 # ----------------------------------
 # MAIN
 # ----------------------------------
