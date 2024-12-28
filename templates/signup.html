@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up</title>
     <style>
+        :root {
+            /* Same root variables as in main.html */
+            --header-color: #00298f;       /* Primary header and button color */
+            --header-hover-color: #1c44a3; /* Hover color for buttons */
+            --active-tab-color: #5774b6;   /* (Optional) for consistency */
+        }
+
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
@@ -13,9 +20,37 @@
             padding: 0;
         }
 
+        /* Header styling (same as main.html but only the logo) */
+        .header {
+            display: flex;
+            align-items: center;
+            background-color: var(--header-color);
+            color: white;
+            padding: 10px 20px;
+        }
+        .logo a {
+            text-decoration: none;
+            color: inherit;
+            display: inline-block;
+            background: none !important;
+            border: none;
+            padding: 0;
+            margin: 0;
+        }
+        .logo img {
+            display: block;
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            height: 50px;
+            width: auto;
+        }
+
+        /* Container and form styling */
         .container {
             max-width: 400px;
-            margin: 100px auto;
+            margin: 80px auto; /* Adjusted top margin so the header doesn't overlap */
             padding: 20px;
             background: white;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -24,7 +59,8 @@
 
         h2 {
             text-align: center;
-            color: #4CAF50;
+            color: var(--header-color);
+            margin-bottom: 20px;
         }
 
         form {
@@ -53,12 +89,12 @@
         input[type="email"]:focus,
         input[type="password"]:focus {
             outline: none;
-            border-color: #4CAF50;
-            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+            border-color: var(--header-color);
+            box-shadow: 0 0 5px rgba(0, 41, 143, 0.3);
         }
 
         .signup-btn {
-            background-color: #4CAF50;
+            background-color: var(--header-color);
             color: white;
             padding: 10px;
             font-size: 16px;
@@ -68,7 +104,11 @@
             transition: background-color 0.3s ease;
         }
 
-		.flash-messages {
+        .signup-btn:hover {
+            background-color: var(--header-hover-color);
+        }
+
+        .flash-messages {
             margin-top: 15px;
             padding: 10px;
             background-color: #f8d7da;
@@ -94,7 +134,7 @@
         }
 
         .back-to-login a {
-            color: #4CAF50;
+            color: var(--header-color);
             text-decoration: none;
             font-weight: bold;
         }
@@ -112,6 +152,16 @@
     </style>
 </head>
 <body>
+
+    <!-- Header with logo only -->
+    <div class="header">
+        <div class="logo">
+            <a href="/">
+                <img src="/static/nycuflix.png" alt="Movie Catalog Logo">
+            </a>
+        </div>
+    </div>
+
     <div class="container">
         <h2>Sign Up</h2>
         <form method="POST">
@@ -131,20 +181,20 @@
         </form>
 
         <div class="back-to-login">
-            <p>Already have an account? <a href="/">Back to Login</a></p>
+            <p>Already have an account? <a href="/login">Back to Login</a></p>
         </div>
-		        
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    <ul>
-                        {% for category, message in messages %}
-                            <li class="{{ category }}">{{ message }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
-            {% endwith %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                <ul>
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% endwith %}
     </div>
 
     <footer>
