@@ -110,7 +110,7 @@ def login():
             session['user_id'] = user_id
             session['username'] = username  # Store username only when logged in
             session.permanent = True
-            flash("Welcome back!", "success")
+            #flash("Welcome back!", "success") #turned into comment 
             cursor.close()
             conn.close()
             return redirect("/")
@@ -124,19 +124,6 @@ def login():
 
 
 # ----------------------------------
-# WELCOME
-# ----------------------------------
-@app.route("/welcome")
-def welcome():
-    """
-    Simple welcome page after successful login.
-    """
-    if 'username' not in session:
-        return redirect("/")
-    return render_template("welcome.html")
-
-
-# ----------------------------------
 # LOGOUT
 # ----------------------------------
 @app.route("/logout")
@@ -145,7 +132,7 @@ def logout():
     Logs out the current user by clearing the session.
     """
     session.pop('username', None)
-    flash("You have been logged out.", "info")
+    #flash("You have been logged out.", "info")
     return redirect("/")
 
 
@@ -310,9 +297,9 @@ def movie_detail(movie_id):
                 VALUES (%s, %s, %s)
             """, (movie_id, user_id, comment_text.strip()))
             conn.commit()
-            flash("Comment added successfully!", "success")
-        else:
-            flash("Comment cannot be empty.", "danger")
+            flash("Your comment was posted successfully!", "success")
+        #else:
+            #flash("Comment cannot be empty.", "danger")
 
     # Fetch comments for the movie
     cursor.execute("""
@@ -329,15 +316,8 @@ def movie_detail(movie_id):
 
     return render_template("movie.html", movie=movie, comments=comments, is_logged_in=is_logged_in, username=username)
 
-
-
-
-
-
 # ----------------------------------
 # MAIN
 # ----------------------------------
-
-
 if __name__ == "__main__":
     app.run(debug=True)
