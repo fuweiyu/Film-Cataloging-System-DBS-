@@ -315,6 +315,57 @@ def search():
 
     return render_template("search.html", query=query, search_results=combined_results, title_matches=title_matches, keyword_matches=keyword_matches, is_logged_in=is_logged_in, username=username)
 
+
+#This part was written by FRAN
+# ----------------------------------
+# MOVIE RATING / RATE DETAILS
+# ----------------------------------
+@app.route("/movie/<int:movie_id>/rate", methods=["POST"])
+def rate_movie(movie_id):
+    if 'user_id' not in session:
+        flash("You need to log in to rate a movie.", "warning")
+        return redirect(url_for('login', next=movie_id))
+
+    user_id = session['user_id']
+    try:
+        rating = int(request.form['rating'])
+        if not (0 <= rating <= 5):
+            raise ValueError("Invalid rating value.")
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check if the user has already rated the movie
+        cursor.execute("""
+            SELECT rating FROM Ratings WHERE movieId = %s AND userId = %s
+        """, (movie_id, user_id))
+        existing_rating = cursor.fetchone()
+
+        if existing_rating:
+            # Update the rating
+            cursor.execute("""
+                UPDATE Ratings SET rating = %s WHERE movieId = %s AND userId = %s
+            """, (rating, movie_id, user_id))
+            flash("Your rating has been updated.", "success")
+        else:
+            # Insert a new rating
+            cursor.execute("""
+                INSERT INTO Ratings (movieId, userId, rating) VALUES (%s, %s, %s)
+            """, (movie_id, user_id, rating))
+            flash("Thank you for rating this movie!", "success")
+
+        conn.commit()
+    except ValueError:
+        flash("Please enter a valid rating (0-5).", "danger")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('movie_detail', movie_id=movie_id))
+
+
 # ----------------------------------
 # MOVIE DETAILS
 # ----------------------------------
@@ -323,13 +374,14 @@ def movie_detail(movie_id):
     # Check if user is logged in
     is_logged_in = 'user_id' in session
     username = session.get('username')
-
+    user_id = session.get('user_id')  # This is repetitive
+    
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     # Fetch movie details
     cursor.execute("""
-        SELECT movieId, title, tagline, overview, releaseDate, language, runtime, budget
+        SELECT voteAverage, movieId, title, tagline, overview, releaseDate, language, runtime, budget
         FROM Movies
         WHERE movieId = %s
     """, (movie_id,))
@@ -340,6 +392,30 @@ def movie_detail(movie_id):
         conn.close()
         flash("Movie not found!", "danger")
         return redirect("/search")
+
+    #----------------------------------------RATING CHANGES (BEGIN)
+    # Fetch critic rating (voteAverage) from the movie data
+    average_rating = movie.get('voteAverage', 0)
+
+    # Calculate the average user rating for the movie
+    cursor.execute("""
+        SELECT AVG(rating) as user_rating_average
+        FROM Ratings
+        WHERE movieId = %s
+    """, (movie_id,))
+    user_ratings = cursor.fetchone()
+    user_rating_average = round(user_ratings['user_rating_average'], 2) if user_ratings and user_ratings['user_rating_average'] else 0
+
+    # Fetch user's rating (if logged in)
+    user_rating = None
+    if user_id:
+        cursor.execute("""
+            SELECT rating FROM Ratings WHERE movieId = %s AND userId = %s
+        """, (movie_id, user_id))
+        result = cursor.fetchone()
+        user_rating = result['rating'] if result else None
+    #------------------------------RATING CHANGES (END)
+
 
     # Handle comment submission
     if request.method == "POST":
@@ -383,7 +459,16 @@ def movie_detail(movie_id):
     cursor.close()
     conn.close()
 
-    return render_template("movie.html", movie=movie, comments=comments, is_logged_in=is_logged_in, username=username)
+    return render_template(
+        "movie.html",
+        movie=movie,
+        average_rating=average_rating,
+        user_rating_average=user_rating_average,
+        user_rating=user_rating,
+        comments=comments,
+        is_logged_in=is_logged_in,
+        username=username)
+
 # ----------------------------------
 # EDIT COMMENT 
 # ----------------------------------
