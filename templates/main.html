@@ -6,11 +6,11 @@
     <title>Movie Catalog</title>
     <style>
         :root {
-            --header-color: #00298f; /* Primary header and tab color */
+            --header-color: #00298f;       /* Primary header and tab color */
             --header-hover-color: #1c44a3; /* Hover color for tabs */
-            --active-tab-color: #5774b6; /* Active tab color */
-            --tab-section-width: 80%; /* Adjust the total width of the tab section */
-            --tab-buttons-width: 60%; /* Adjust the total width occupied by the tab buttons */
+            --active-tab-color: #5774b6;   /* Active tab color */
+            --tab-section-width: 80%;      /* Adjust the total width of the tab section */
+            --tab-buttons-width: 60%;      /* Adjust the total width occupied by the tab buttons */
         }
 
         body {
@@ -20,7 +20,7 @@
             background-color: #f4f4f9;
         }
 
-        /* FERNAN MODIFICO DESDE ACA */
+        /* Header Section */
         .header {
             display: flex;
             justify-content: space-between;
@@ -31,18 +31,18 @@
         }
 
         .logo a {
-            text-decoration: none; /* Remove underline */
-            color: inherit; /* Inherit text color */
-            display: inline-block; /* Properly wrap the image */
-            background: none !important; /* Forcefully remove background */
-            border: none; /* Remove any border */
-            padding: 0; /* Remove any extra padding */
-            margin: 0; /* Remove extra margin */
+            text-decoration: none;
+            color: inherit;
+            display: inline-block;
+            background: none !important;
+            border: none;
+            padding: 0;
+            margin: 0;
         }
 
         .logo img {
             display: block; 
-            background: none; 
+            background: none;
             border: none;
             padding: 0;
             margin: 0; 
@@ -52,10 +52,8 @@
 
         .logo a:focus, 
         .logo a:hover {
-            outline: none; /* Remove the outline on focus or hover */
+            outline: none;
         }
-
-        /* FERNAN MODIFICO hasta ACA */
 
         .header a {
             color: white;
@@ -70,7 +68,7 @@
             background-color: #555;
         }
 
-        /* FERNAN MODIFICO DESDE ACA */
+        /* Search Container */
         .search-container {
             max-width: 600px;
             margin: 20px auto;
@@ -105,8 +103,43 @@
         .search-container button:hover {
             background-color: #f1f1f1;
         }
-        /* FERNAN MODIFICO hasta ACA */
 
+        /* Flash Messages */
+        .flash-messages {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #f5c6cb; /* default for danger/warning */
+            background-color: #f8d7da;  /* default for danger/warning */
+            color: #721c24;
+        }
+
+        .flash-messages ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        /* Variants for success, warning, etc. */
+        .flash-messages .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .flash-messages .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .flash-messages .danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Tabs Container */
         .tabs-container {
             max-width: var(--tab-section-width);
             margin: 20px auto;
@@ -124,7 +157,7 @@
         }
 
         .tab {
-            flex-grow: 1; /* Tabs divide the total width equally */
+            flex-grow: 1;
             padding: 10px 20px;
             background-color: var(--header-color);
             color: white;
@@ -203,12 +236,10 @@
             showTab(0); // Show the first tab by default
         });
     </script>
-    
 </head>
 <body>
 
-
-<!-- FERNAN MODIFICO DESDE ACA -->
+    <!-- Header -->
     <div class="header">
         <div class="logo">
             <a href="/">
@@ -227,6 +258,19 @@
             <a href="/login">Login/Sign Up</a>
         {% endif %}
     </div>
+
+    <!-- Flash Messages Section (below header) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-messages">
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    {% endwith %}
 
     {% if search_results %}
         <div class="search-results">
@@ -249,11 +293,10 @@
     {% if not search_results and tabs %}
         <div class="tabs-container">
             <div class="tabs">
-    {% for i in range(tabs|length) %}
-    <div class="tab" onclick="showTab({{ i }})">Tab {{ i + 1 }}</div>
-    {% endfor %}
-</div>
-
+                {% for i in range(tabs|length) %}
+                    <div class="tab" onclick="showTab({{ i }})">Tab {{ i + 1 }}</div>
+                {% endfor %}
+            </div>
 
             {% for tab_movies in tabs %}
             <div class="tab-content">
@@ -275,4 +318,3 @@
     {% endif %}
 </body>
 </html>
-<!-- FERNAN MODIFICO hasta ACA -->
