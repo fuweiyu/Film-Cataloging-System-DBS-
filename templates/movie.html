@@ -219,11 +219,12 @@
             </form>
         </div>
         <!-- Hardcoded Fallback -->
-        {% if is_logged_in and username %}
-            <a href="/logout">Logout ({{ username }})</a>
-        {% else %}
-            <a href="/login">Sign In/Sign Up</a>
-        {% endif %}
+		{% if is_logged_in and username %}
+			<a href="/logout">Logout ({{ username }})</a>
+		{% else %}
+			<a href="{{ url_for('login', next=movie['movieId']) }}">Sign In/Sign Up</a>
+		{% endif %}
+
     </div>
     <!-- Movie Details Section -->
     <div class="content">
@@ -278,8 +279,9 @@
             </form>
         
         {% else %}
-            <p><a href="/login">Log in</a> to leave a comment.</p>
-        {% endif %}
+			<p><a href="{{ url_for('login', next=movie['movieId']) }}">Log in</a> to leave a comment.</p>
+		{% endif %}
+
     </div>
     
 </body>

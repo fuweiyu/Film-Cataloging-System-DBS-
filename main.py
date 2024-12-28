@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, flash, session
+from flask import Flask, render_template, request, redirect, flash, session, url_for
 import mysql.connector
 import hashlib  # for SHA-256 hashing
 
@@ -100,26 +100,30 @@ def main_page():
         is_logged_in=is_logged_in, 
         username=username)
 
-
-
 # ----------------------------------
 # LOGIN
 # ----------------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    # Grab 'next' from the query string
+    next_page = request.args.get("next")
+
     if request.method == "POST":
+        # Combine the hidden field's value (if any) with the GET param
+        next_page = request.form.get("next") or next_page
+
         username_or_email = request.form['username_or_email']
         password = request.form['password']
-
-        # Hash the password
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Check user credentials
+        # Check if user exists
         cursor.execute("""
-            SELECT userId, userName FROM Users WHERE userName = %s OR emailAddress = %s
+            SELECT userId, userName 
+            FROM Users 
+            WHERE userName = %s OR emailAddress = %s
         """, (username_or_email, username_or_email))
         user_row = cursor.fetchone()
 
@@ -127,7 +131,7 @@ def login():
             flash("Invalid username/email or password", "danger")
             cursor.close()
             conn.close()
-            return redirect("/login")
+            return redirect(url_for("login", next=next_page) if next_page else url_for("login"))
 
         user_id, username = user_row
 
@@ -136,21 +140,29 @@ def login():
         pass_row = cursor.fetchone()
 
         if pass_row and pass_row[0] == hashed_password:
+            # Successful login
             session['user_id'] = user_id
-            session['username'] = username  # Store username only when logged in
+            session['username'] = username
             session.permanent = True
-            #flash("Welcome back!", "success") #turned into comment 
             cursor.close()
             conn.close()
-            return redirect("/")
+
+            # If we have a next page, redirect to that movie; otherwise, main page
+            # After successful login...
+            try:
+                movie_id = int(next_page)
+                return redirect(url_for("movie_detail", movie_id=movie_id))
+            except (ValueError, TypeError):
+                # Not a valid integer, go to main page
+                return redirect("/")
         else:
             flash("Invalid username/email or password", "danger")
+            cursor.close()
+            conn.close()
+            return redirect(url_for("login", next=next_page) if next_page else url_for("login"))
 
-        cursor.close()
-        conn.close()
-
-    return render_template("login.html")
-
+    # GET request
+    return render_template("login.html", next=next_page)
 
 # ----------------------------------
 # LOGOUT
@@ -311,6 +323,11 @@ def movie_detail(movie_id):
     if request.method == "POST":
         user_id = session.get("user_id")
         comment_text = request.form.get("comment")
+        
+        if not user_id:
+            flash("You need to be logged in to post comments.", "warning")
+            # IMPORTANT: Redirect to /login?next=<this_movie_id>
+            return redirect(url_for("login", next=movie_id))
 
         # Debugging logs
         print("User ID:", user_id)
