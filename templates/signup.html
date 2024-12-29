@@ -108,25 +108,45 @@
             background-color: var(--header-hover-color);
         }
 
+        /* Flash Messages Section */
         .flash-messages {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-            /*change color of background and color*/
-        .flash-messages .success {
-            background-color: #155724;
-            color: #f4f4f9;
-            border: 1px solid #155724;
-        }
-        /*change color of background and color*/
-        .flash-messages .danger {
-            background-color: #d43744;
-            color: #f4f4f9;
-            border: 1px solid #c3e6cb;
-        }
+			margin-top: 15px;
+			padding: 0; /* since ul will handle padding of messages, or keep it if you want */
+			border-radius: 5px;
+		}
 
+		.flash-messages ul {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+
+		/* Each <li> changes color based on category */
+		.flash-messages li.success {
+			background-color: #d4edda;
+			color: #155724;
+			border: 1px solid #c3e6cb;
+			margin-bottom: 5px;
+			padding: 10px;
+			border-radius: 5px;
+		}
+		.flash-messages li.danger {
+			background-color: #f8d7da;
+			color: #721c24;
+			border: 1px solid #f5c6cb;
+			margin-bottom: 5px;
+			padding: 10px;
+			border-radius: 5px;
+		}
+		.flash-messages li.warning {
+			background-color: #fff3cd;
+			color: #856404;
+			border: 1px solid #ffeeba;
+			margin-bottom: 5px;
+			padding: 10px;
+			border-radius: 5px;
+		}
+		
         .back-to-login {
             text-align: center;
             margin-top: 15px;
@@ -183,21 +203,22 @@
             <p>Already have an account? <a href="/login">Back to Login</a></p>
         </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-messages">
-                <ul>
-                    {% for category, message in messages %}
-                        <li class="{{ category }}">{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endif %}
-        {% endwith %}
+        <!-- Flash Messages -->
+		{% with messages = get_flashed_messages(with_categories=true) %}
+		{% if messages %}
+			<div class="flash-messages">
+				<ul>
+					{% for category, message in messages %}
+						<li class="{{ category }}">{{ message }}</li>
+					{% endfor %}
+				</ul>
+			</div>
+		{% endif %}
+		{% endwith %}
     </div>
 
-    <footer>
-        &copy; 2024 NYCU DB HW3 112550149 傅維雨. All rights reserved.
+      <footer>
+        &copy; 2024 NYCU DATA BASES FINAL PROJECT. All rights reserved.
     </footer>
 </body>
 </html>

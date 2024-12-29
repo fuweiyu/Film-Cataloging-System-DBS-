@@ -201,9 +201,6 @@ def logout():
     return redirect("/")
 
 
-# ----------------------------------
-# SIGNUP
-# ----------------------------------
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
@@ -222,17 +219,21 @@ def signup():
             cursor.execute("""
                 SELECT userName, emailAddress FROM Users WHERE userName = %s OR emailAddress = %s
             """, (username, email))
-            existing_user = cursor.fetchone()
+            existing_user = cursor.fetchall()  # Fetch all results to avoid unread result error
 
             if existing_user:
                 # Only trigger the appropriate message
-                if existing_user[0] == username and existing_user[1] == email:
-                    flash("Username and email already exist. Please use different ones.", "danger")
-                elif existing_user[0] == username:
-                    flash("Username already exists. Please choose a different one.", "danger")
-                elif existing_user[1] == email:
-                    flash("Email already exists. Please use a different email.", "danger")
-                
+                for user in existing_user:
+                    if user[0] == username and user[1] == email:
+                        flash("Username and email already exist.\n Please use different ones.", "danger")
+                        break
+                    elif user[0] == username:
+                        flash("Username already exists. Please choose a different one.", "danger")
+                        break
+                    elif user[1] == email:
+                        flash("Email already exists. Please use a different email.", "danger")
+                        break
+
                 # Stop further execution
                 return redirect("/signup")
 
