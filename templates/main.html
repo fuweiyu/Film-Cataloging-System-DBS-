@@ -300,7 +300,7 @@
     <div class="tabs-container">
         <div class="tabs">
             <div class="tab active" onclick="showTab(0)">Rating</div>
-            <div class="tab" onclick="showTab(1)">Random</div>
+            <div class="tab" onclick="showTab(1)">For you</div>
             <div class="tab" onclick="showTab(2)">Trending</div> <!-- New Trending Tab -->
             <div class="tab" onclick="showTab(3)">Popular</div> <!-- New Popular Tab -->
         </div>
@@ -323,21 +323,120 @@
             </table>
         </div>
         
-        <!-- Tab Content for Random -->
+    
+        <!-- Tab Content for "For You" -->
         <div class="tab-content">
-            <table>
-                <tr>
-                    <th>Title</th>
-                    <th>Description</th>
-                </tr>
-                {% for movie in random_table %}
-                <tr>
-                    <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
-                    <td>{{ movie['overview'] }}</td>
-                </tr>
-                {% endfor %}
-            </table>
-        </div>
+            {% if is_logged_in %}
+                <!-- If for_you_table is a list of dicts with 'genreName', 
+                    it means we have "recommendations" data. -->
+                {% if for_you_table and for_you_table[0] is mapping and 'genreName' in for_you_table[0] %}
+                    <!-- Display 3 Genre Boxes, each with 3 recommended movies -->
+                    {% for genre_block in for_you_table %}
+                        <h2>{{ genre_block.genreName }}</h2>
+                        <table>
+                            <tr>
+                                <th>Title</th>
+                                <th>User Rating</th>
+                                <th>Description</th>
+                            </tr>
+                            {% for movie in genre_block.movies %}
+                            <tr>
+                                <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                                <td>{{ movie['user_rating_average']|round(2) }}</td>
+                                <td>{{ movie['overview'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    {% endfor %}
+                
+                {% else %}
+                    <!-- Else, it's just random movies (like fallback case) -->
+                    <table>
+                        <tr>
+                            <th>Title</th>
+                            <th>Description</th>
+                        </tr>
+                        {% for movie in for_you_table %}
+                        <tr>
+                            <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                            <td>{{ movie['overview'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% endif %}
+            {% else %}
+                <!-- User is not logged in => Just random movies -->
+                <table>
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                    </tr>
+                    {% for movie in for_you_table %}
+                    <tr>
+                        <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                        <td>{{ movie['overview'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
+            </div>   
+             
+            <!-- Tab Content for "For You" -->
+            <div class="tab-content">
+                {% if is_logged_in %}
+                    <!-- If for_you_table is a list of dicts with 'genreName', 
+                        it means we have "recommendations" data. -->
+                    {% if for_you_table and for_you_table[0] is mapping and 'genreName' in for_you_table[0] %}
+                        <!-- Display 3 Genre Boxes, each with 3 recommended movies -->
+                        {% for genre_block in for_you_table %}
+                            <h2>{{ genre_block.genreName }}</h2>
+                            <table>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>User Rating</th>
+                                    <th>Description</th>
+                                </tr>
+                                {% for movie in genre_block.movies %}
+                                <tr>
+                                    <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                                    <td>{{ movie['user_rating_average']|round(2) }}</td>
+                                    <td>{{ movie['overview'] }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        {% endfor %}
+                    
+                    {% else %}
+                        <!-- Else, it's just random movies (like fallback case) -->
+                        <table>
+                            <tr>
+                                <th>Title</th>
+                                <th>Description</th>
+                            </tr>
+                            {% for movie in for_you_table %}
+                            <tr>
+                                <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                                <td>{{ movie['overview'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    {% endif %}
+                {% else %}
+                    <!-- User is not logged in => Just random movies -->
+                    <table>
+                        <tr>
+                            <th>Title</th>
+                            <th>Description</th>
+                        </tr>
+                        {% for movie in for_you_table %}
+                        <tr>
+                            <td><a href="/movie/{{ movie['movieId'] }}">{{ movie['title'] }}</a></td>
+                            <td>{{ movie['overview'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% endif %}
+            </div>
         
         <!-- Tab Content for Trending -->
         <div class="tab-content">
@@ -356,6 +455,7 @@
                 {% endfor %}
             </table>
         </div>
+
         <!-- Tab Content for Popular -->
         <div class="tab-content">
             <table>
