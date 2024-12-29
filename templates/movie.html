@@ -234,6 +234,11 @@
         <h1>{{ movie['title'] }}</h1>
 
         <div class="details">
+            <!-- Debugging: Show if user is logged in -->
+            <!--
+            <p>Debugging: is_logged_in = {{ is_logged_in }}</p>
+            -->
+            
             <p><span>Tagline:</span> {{ movie['tagline'] }}</p>
             <p><span>Overview:</span> {{ movie['overview'] }}</p>
             <p><span>Release Date:</span> {{ movie['releaseDate'] }}</p>
@@ -242,22 +247,25 @@
             <p><span>Budget:</span> ${{ '{:,}'.format(movie['budget']) }}</p>
             <p><span>Critic Ratings:</span> {{ average_rating }}</p>
             <p><span>User Ratings:</span> {{ user_rating_average }}</p>
-
-            {% if user_rating %}
-            <p><span>Your Rating:</span> {{ user_rating }}</p>
-            <form method="POST" action="/movie/{{ movie['movieId'] }}/rate">
-                <label for="new-rating">Update your rating (0-5):</label>
-                <input type="number" id="new-rating" name="rating" min="0" max="5" required>
-                <button type="submit">Update Rating</button>
-            </form>
-            {% else %}
-            <p>You haven't rated this movie yet.</p>
-            <form method="POST" action="/movie/{{ movie['movieId'] }}/rate">
-                <label for="new-rating">Rate this movie (0-5):</label>
-                <input type="number" id="new-rating" name="rating" min="0" max="5" required>
-                <button type="submit">Submit Rating</button>
-            </form>
+            
+            {% if is_logged_in %}
+                {% if user_rating %}
+                <p><span>Your Rating:</span> {{ user_rating }}</p>
+                <form method="POST" action="/movie/{{ movie['movieId'] }}/rate">
+                    <label for="new-rating">Update your rating (0-5):</label>
+                    <input type="number" id="new-rating" name="rating" min="0" max="5" required>
+                    <button type="submit">Update Rating</button>
+                </form>
+                {% else %}
+                <p>You haven't rated this movie yet.</p>
+                <form method="POST" action="/movie/{{ movie['movieId'] }}/rate">
+                    <label for="new-rating">Rate this movie (0-5):</label>
+                    <input type="number" id="new-rating" name="rating" min="0" max="5" required>
+                    <button type="submit">Submit Rating</button>
+                </form>
+                {% endif %}
             {% endif %}
+            
         </div>
 
         <a href="/search">Back to Main Page</a>

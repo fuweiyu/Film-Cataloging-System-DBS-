@@ -191,10 +191,12 @@ def login():
 # ----------------------------------
 @app.route("/logout")
 def logout():
-    """
-    Logs out the current user by clearing the session.
-    """
+    # Clear specific session variables
+    session.pop('user_id', None)
     session.pop('username', None)
+    session.pop('user_role', None)
+    # Clear all session data
+    session.clear()
     #flash("You have been logged out.", "info")
     return redirect("/")
 
