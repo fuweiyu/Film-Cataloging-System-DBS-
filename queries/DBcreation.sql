@@ -5,7 +5,7 @@ USE FilmCatalog;
 
 -- Create the Movies table
 CREATE TABLE Movies (
-    movieId INTEGER PRIMARY KEY,
+    movieId INTEGER PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
     tagline VARCHAR(255),
     overview TEXT,
@@ -15,51 +15,6 @@ CREATE TABLE Movies (
     voteAverage FLOAT,
     voteCount INTEGER,
     budget INTEGER
-);
-
--- Create the Genres table
-CREATE TABLE Genres (
-    genreId INTEGER PRIMARY KEY,
-    name VARCHAR(255) NOT NULL
-);
-
--- Create link between genres and movies
-CREATE TABLE MovieGenres (
-    movieId INTEGER NOT NULL,
-    genreId INTEGER NOT NULL,
-    PRIMARY KEY (movieId, genreId),
-    FOREIGN KEY (movieId) REFERENCES Movies(movieId) ON DELETE CASCADE,
-    FOREIGN KEY (genreId) REFERENCES Genres(genreId) ON DELETE CASCADE
-);
-
--- Create the Countries table
-CREATE TABLE Countries (
-    countryId INTEGER PRIMARY KEY,
-    name VARCHAR(255) NOT NULL
-);
-
--- Create link between countries and movies
-CREATE TABLE MovieCountries (
-    movieId INTEGER NOT NULL,
-    countryId INTEGER NOT NULL,
-    PRIMARY KEY (movieId, countryId),
-    FOREIGN KEY (movieId) REFERENCES Movies(movieId) ON DELETE CASCADE,
-    FOREIGN KEY (countryId) REFERENCES Countries(countryId) ON DELETE CASCADE
-);
-
--- Create the Production Companies table
-CREATE TABLE Companies (
-    companyId INTEGER PRIMARY KEY,
-    name VARCHAR(255)
-);
-
--- Create link between companies and movies
-CREATE TABLE MovieCompanies (
-    movieId INTEGER NOT NULL,
-    companyId INTEGER NOT NULL,
-    PRIMARY KEY (movieId, companyId),
-    FOREIGN KEY (movieId) REFERENCES Movies(movieId) ON DELETE CASCADE,
-    FOREIGN KEY (companyId) REFERENCES Companies(companyId) ON DELETE CASCADE
 );
 
 -- Create the Keywords table
@@ -83,7 +38,7 @@ CREATE TABLE Users (
     userName VARCHAR(50) NOT NULL UNIQUE,
     emailAddress VARCHAR(255) NOT NULL UNIQUE,
     createDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-    userRole ENUM('normal', 'moderator', 'admin') DEFAULT 'normal'
+    userRole ENUM('normal', 'admin') DEFAULT 'normal'
 );
 
 -- Isolate the passwords
@@ -101,18 +56,16 @@ CREATE TABLE Comments (
     userId INTEGER NOT NULL,
     commentText TEXT,
     timeStamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    isFlagged BOOLEAN DEFAULT false,
-    likes INTEGER DEFAULT 0,
     FOREIGN KEY (movieId) REFERENCES Movies(movieId) ON DELETE CASCADE,
     FOREIGN KEY (userId) REFERENCES Users(userId) ON DELETE CASCADE
 );
 
 -- Create the Ratings table
 CREATE TABLE Ratings (
-    movieId INTEGER NOT NULL,
-    userId INTEGER NOT NULL,
-    rating FLOAT,
-    PRIMARY KEY (movieId, userId),
-    FOREIGN KEY (movieId) REFERENCES Movies(movieId) ON DELETE CASCADE,
-    FOREIGN KEY (userId) REFERENCES Users(userId) ON DELETE CASCADE
+        movieId INT NOT NULL,
+        userId INT NOT NULL,
+        rating DECIMAL(3, 2) NOT NULL,
+        PRIMARY KEY (movieId, userId),
+        FOREIGN KEY (movieId) REFERENCES Movies(movieId) ON DELETE CASCADE,
+        FOREIGN KEY (userId) REFERENCES Users(userId) ON DELETE CASCADE
 );
