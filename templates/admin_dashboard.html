@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        :root {
+            --header-color: #00298f; /* Primary header color */
+            --header-hover-color: #1c44a3; /* Hover color for buttons */
+            --active-tab-color: #5774b6; /* Active tab background */
+            --table-border-color: #ddd; /* Table border color */
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: var(--header-color);
+        }
+
+        table {
+            width: 90%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--table-border-color);
+        }
+
+        th {
+            background-color: var(--header-color);
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .pagination a, .pagination strong {
+            margin: 0 5px;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: var(--header-color);
+            border: 1px solid var(--header-color);
+            border-radius: 5px;
+        }
+
+        .pagination a:hover {
+            background-color: var(--header-color);
+            color: white;
+        }
+
+        .pagination strong {
+            background-color: var(--header-color);
+            color: white;
+            border: none;
+        }
+
+        .form-inline {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        select {
+            padding: 5px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        button {
+            padding: 5px 10px;
+            font-size: 14px;
+            background-color: var(--header-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: var(--header-hover-color);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--header-color);
+            color: white;
+            padding: 10px 20px;
+        }
+
+        .logo a {
+            text-decoration: none;
+            color: inherit;
+            display: inline-block;
+            background: none !important;
+            border: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .logo img {
+            display: block; 
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0; 
+            height: 50px; 
+            width: auto; 
+        }
+
+        .logo a:focus, 
+        .logo a:hover {
+            outline: none;
+        }
+
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background-color: #333;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .header a:hover {
+            background-color: #555;
+        }
+
+
+        .header a:hover {
+            background-color: #555;
+        }
+        /* Search Container */
+        .search-container {
+            max-width: 600px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        .search-container form {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .search-container input[type="text"] {
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 200px;
+        }
+
+        .search-container button {
+            padding: 8px 16px;
+            font-size: 14px;
+            background-color: white;
+            color: var(--header-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .search-container button:hover {
+            background-color: #f1f1f1;
+        }
+
+        .flash-messages {
+            margin: 20px auto;
+            max-width: 600px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: center;
+        }
+
+        .flash-messages .success {
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+
+        .flash-messages .danger {
+            border-color: #DC3545;
+            color: #DC3545;
+        }
+        </style>    
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <a href="/">
+                <img src="/static/nycuflix.png" alt="Movie Catalog Logo">
+            </a>
+        </div>
+        <div class="search-container" style="display: flex; align-items: center; justify-content: center; width: 100%;">
+            <form method="GET" action="/admin" style="display: flex; align-items: center; gap: 10px;">
+                <input 
+                    type="text" 
+                    id="search-query" 
+                    name="query" 
+                    placeholder="Search for movies..." 
+                    value="{{ search_query }}" 
+                    required 
+                    style="width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 5px;"
+                >
+                <button 
+                    type="submit" 
+                    style="padding: 5px 10px; background-color: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer;"
+                >
+                    Search
+                </button>
+            </form>
+        </div>
+        
+        
+        <div style="display: flex; align-items: center; gap: 10px;">
+            {% if is_logged_in %}
+                <a href="/logout" style="text-decoration: none; padding: 5px 10px; background: #007BFF; color: white; border-radius: 5px;">Logout ({{ username }})</a>
+
+                {% if display_role %}
+                    <!-- Admin link to redirect to the Admin Dashboard -->
+                    <a href="/admin" style="text-decoration: none; padding: 5px 10px; background: #007BFF; color: white; border-radius: 5px;">Admin Dashboard</a>        {% endif %}
+            {% else %}
+                <a href="/login" style="text-decoration: none; padding: 5px 10px; background: #007BFF; color: white; border-radius: 5px;">Login/Sign Up</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-messages">
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Content -->
+    <h1>Admin Dashboard</h1>
+    <h2>Manage Movies</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Overview</th>
+                <th>Release Date</th>
+                <th>Budget</th>
+                <th>Language</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Add New Movie Row -->
+            <tr>
+                <form action="/admin/add_movie" method="POST">
+                    <td>
+                        <input 
+                            type="text" 
+                            name="title" 
+                            placeholder="Enter title" 
+                            required 
+                            style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 5px;"
+                        >
+                    </td>
+                    <td>
+                        <textarea 
+                            name="overview" 
+                            placeholder="Enter overview" 
+                            style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 5px;"
+                        ></textarea>
+                    </td>
+                    <td>
+                        <input 
+                            type="date" 
+                            name="release_date" 
+                            style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 5px;"
+                        >
+                    </td>
+                    <td>
+                        <input 
+                            type="number" 
+                            name="budget" 
+                            placeholder="Enter budget" 
+                            style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 5px;"
+                        >
+                    </td>
+                    <td>
+                        <input 
+                            type="text" 
+                            name="language" 
+                            placeholder="Enter language" 
+                            style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 5px;"
+                        >
+                    </td>
+                    <td>
+                        <button 
+                            type="submit" 
+                            style="padding: 5px 10px; background-color: #007BFF; color: white; border: none; border-radius: 5px;"
+                        >
+                            Add Movie
+                        </button>
+                    </td>
+                </form>
+            </tr>
+        </tbody>        
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Overview</th>
+                <th>Release Date</th>
+                <th>Budget</th>
+                <th>Language</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for movie in movies %}
+            <tr>
+                <td>
+                    <form action="/admin/update_movie/{{ movie['movieId'] }}" method="POST" style="display: inline;">
+                        <input 
+                            type="text" 
+                            name="title" 
+                            value="{{ movie['title'] if movie['title'] else 'Untitled' }}" 
+                            placeholder="No Title Provided" 
+                            required
+                        >
+                </td>
+                <td>
+                    <textarea name="overview" placeholder="Overview">{{ movie['overview'] }}</textarea>
+                </td>
+                <td>
+                    <input type="date" name="release_date" value="{{ movie['releaseDate'] }}">
+                </td>
+                <td>
+                    <input type="number" name="budget" value="{{ movie['budget'] }}">
+                </td>
+                <td>
+                    <input type="text" name="language" value="{{ movie['language'] }}">
+                </td>
+                <td>
+                    <!-- Inline forms to align buttons -->
+                    <form action="/admin/update_movie/{{ movie['movieId'] }}" method="POST" style="display: inline;">
+                        <button type="submit" style="background-color: #007BFF; color: white; padding: 5px 10px; border: none; border-radius: 5px;">Update</button>
+                    </form>
+                    <form action="/admin/delete_movie/{{ movie['movieId'] }}" method="POST" style="display: inline;">
+                        <button type="submit" style="background-color: #DC3545; color: white; padding: 5px 10px; border: none; border-radius: 5px; margin-left: 5px;">Delete</button>
+                    </form>
+                </td>
+            </tr>
+                                
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination">
+        <!-- Previous Button -->
+        {% if current_page > 1 %}
+            <a href="/admin?page={{ current_page - 1 }}">Previous</a>
+        {% endif %}
+    
+        <!-- Page Links -->
+        {% for page_num in range(start_page, end_page + 1) %}
+            {% if page_num == current_page %}
+                <strong>{{ page_num }}</strong>
+            {% else %}
+                <a href="/admin?page={{ page_num }}">{{ page_num }}</a>
+            {% endif %}
+        {% endfor %}
+    
+        <!-- Next Button -->
+        {% if current_page < total_pages %}
+            <a href="/admin?page={{ current_page + 1 }}">Next</a>
+        {% endif %}
+    </div>
+    
+</body>
+</html>

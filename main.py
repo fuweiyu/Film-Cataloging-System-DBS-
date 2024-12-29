@@ -72,148 +72,14 @@ def main_page():
     """)
     rating_table = cursor.fetchall()
 
-    # ------------------- TAB 2: "FOR YOU" ---------------------
-    # We'll either show "for you" if logged in or random movies if not.
-    is_logged_in = 'user_id' in session
-    user_id = session.get('user_id')
-
-    if is_logged_in:
-        # 1) Find all movies that the user has commented on or rated
-        cursor.execute("""
-            SELECT DISTINCT m.movieId
-            FROM Movies m
-            LEFT JOIN Comments c ON m.movieId = c.movieId AND c.userId = %s
-            LEFT JOIN Ratings r ON m.movieId = r.movieId AND r.userId = %s
-            WHERE c.movieId IS NOT NULL 
-               OR r.movieId IS NOT NULL
-        """, (user_id, user_id))
-        user_seen_movie_ids = [row['movieId'] for row in cursor.fetchall()]
-
-        # If user hasn't interacted with any movie, fallback to random:
-        if not user_seen_movie_ids:
-            cursor.execute("""
-                SELECT movieId, title, overview 
-                FROM Movies 
-                ORDER BY RAND() 
-                LIMIT 10;
-            """)
-            for_you_table = cursor.fetchall()
-        else:
-            # 2) Find the top 3 genres in which the user has seen movies
-            format_ids = ",".join(map(str, user_seen_movie_ids))  # for usage in IN (...)
-            # get the genre counts
-            cursor.execute(f"""
-                SELECT mg.genreId, g.name, COUNT(*) as genre_count
-                FROM MovieGenres mg
-                JOIN Genres g ON mg.genreId = g.genreId
-                WHERE mg.movieId IN ({format_ids})
-                GROUP BY mg.genreId, g.name
-                ORDER BY genre_count DESC
-                LIMIT 3;
-            """)
-            top_genres = cursor.fetchall()  # e.g. [{'genreId':1,'name':'Action','genre_count':5}, ...]
-
-            # 3) For each top genre, pick 3 recommended movies
-            #    that the user has *not* seen, sorted by user rating desc
-            for_you_data = []  # We'll store a structure like: [{'genreName': ..., 'movies': [... ]}, ...]
-
-            for genre_row in top_genres:
-                g_id = genre_row['genreId']
-                g_name = genre_row['name']
-
-                # 3a) Attempt to pick up to 3 top-rated movies not seen by user
-                #     We'll define "user rating" as the average from the 'Ratings' table
-                #     (which might be different from the official voteAverage).
-                #     We can also fallback to official voteAverage if you prefer.
-                cursor.execute(f"""
-                    SELECT m.movieId, m.title, m.overview,
-                           COALESCE(AVG(r.rating), 0) AS user_rating_average
-                    FROM Movies m
-                    JOIN MovieGenres mg ON m.movieId = mg.movieId
-                    LEFT JOIN Ratings r ON r.movieId = m.movieId
-                    WHERE mg.genreId = %s
-                      AND m.movieId NOT IN ({format_ids})
-                    GROUP BY m.movieId
-                    ORDER BY user_rating_average DESC
-                    LIMIT 10;  -- pick 10 to have some buffer
-                """, (g_id,))
-
-                recommended_rows = cursor.fetchall()
-                # We only want the top 3 from this result
-                top_recommended = recommended_rows[:3]
-
-                # 3b) If fewer than 3 found, fill remainder with random from same genre
-                if len(top_recommended) < 3:
-                    needed = 3 - len(top_recommended)
-                    # pick random from that genre, but not in user_seen_movie_ids
-                    random_ids_sql = f"({','.join(map(str, user_seen_movie_ids))})" if user_seen_movie_ids else "(0)"
-                    cursor.execute(f"""
-                        SELECT m.movieId, m.title, m.overview,
-                               COALESCE(AVG(r.rating), 0) AS user_rating_average
-                        FROM Movies m
-                        JOIN MovieGenres mg ON m.movieId = mg.movieId
-                        LEFT JOIN Ratings r ON r.movieId = m.movieId
-                        WHERE mg.genreId = %s
-                          AND m.movieId NOT IN {random_ids_sql}
-                        GROUP BY m.movieId
-                        ORDER BY RAND()
-                        LIMIT {needed};
-                    """, (g_id,))
-                    random_fill = cursor.fetchall()
-                    top_recommended += random_fill
-
-                for_you_data.append({
-                    "genreName": g_name,
-                    "movies": top_recommended  # up to 3
-                })
-
-            # If we have fewer than 3 genres found, just do random for the missing
-            # (This is optional logic—some may prefer skipping empty genres.)
-            if len(for_you_data) < 3:
-                # Fill up the missing genres with random picks
-                # Example: just add random lumps for each missing slot
-                additional_needed = 3 - len(for_you_data)
-                cursor.execute("""
-                    SELECT genreId, name
-                    FROM Genres
-                    ORDER BY RAND()
-                    LIMIT %s;
-                """, (additional_needed,))
-                filler_genres = cursor.fetchall()
-
-                for filler_g in filler_genres:
-                    g_id = filler_g['genreId']
-                    g_name = filler_g['name']
-                    # pick 3 random
-                    cursor.execute(f"""
-                        SELECT m.movieId, m.title, m.overview,
-                               COALESCE(AVG(r.rating), 0) AS user_rating_average
-                        FROM Movies m
-                        JOIN MovieGenres mg ON m.movieId = mg.movieId
-                        LEFT JOIN Ratings r ON r.movieId = m.movieId
-                        WHERE mg.genreId = %s
-                        GROUP BY m.movieId
-                        ORDER BY RAND()
-                        LIMIT 3;
-                    """, (g_id,))
-                    random_3 = cursor.fetchall()
-                    for_you_data.append({
-                        "genreName": g_name,
-                        "movies": random_3
-                    })
-
-            # We'll store for_you_data (the entire structure) in for_you_table
-            # so that we can use it in the template
-            for_you_table = for_you_data
-    else:
-        # NOT LOGGED IN -> Just do random
-        cursor.execute("""
-            SELECT movieId, title, overview 
-            FROM Movies 
-            ORDER BY RAND() 
-            LIMIT 10;
-        """)
-        for_you_table = cursor.fetchall()
+    # Tab 2: Random Movies
+    cursor.execute("""
+        SELECT movieId, title, overview 
+        FROM Movies 
+        ORDER BY RAND() 
+        LIMIT 10;
+    """)
+    random_table = cursor.fetchall()
 
      # Tab 3: Trending Movies
     one_week_ago = datetime.now() - timedelta(days=7)
@@ -249,7 +115,7 @@ def main_page():
     return render_template(
         "main.html",
         rating_table=rating_table,
-        for_you_table=for_you_table,  # pass the new "For You" data
+        random_table=random_table,
         trending_table=trending_table,
         popular_table=popular_table,
         is_logged_in=is_logged_in, 
@@ -539,7 +405,6 @@ def movie_detail(movie_id):
         FROM Ratings
         WHERE movieId = %s
     """, (movie_id,))
-
     user_ratings = cursor.fetchone()
     user_rating_average = round(user_ratings['user_rating_average'], 2) if user_ratings and user_ratings['user_rating_average'] else 0
 
@@ -706,6 +571,171 @@ def delete_comment(comment_id):
     conn.close()
 
     return redirect(f"/movie/{movie_id}")
+
+# ----------------------------------
+# ADMIN DASHBOARD
+# ----------------------------------
+@app.route("/admin", methods=["GET"])
+def admin_dashboard():
+    if 'user_role' not in session or session['user_role'] != 'admin':
+        flash("Access denied. Admins only.", "danger")
+        return redirect("/")
+
+    page = request.args.get('page', 1, type=int)  # Current page
+    search_query = request.args.get('query', '').strip()  # Search query
+    items_per_page = 10
+    max_visible_pages = 10  # Number of page links to display
+    offset = (page - 1) * items_per_page
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch filtered or all movies based on the search query
+    if search_query:
+        # Fetch matching movies
+        cursor.execute("""
+            SELECT * FROM Movies
+            WHERE title LIKE %s OR overview LIKE %s
+            ORDER BY title ASC
+            LIMIT %s OFFSET %s;
+        """, (f"%{search_query}%", f"%{search_query}%", items_per_page, offset))
+        movies = cursor.fetchall()
+
+        # Count total matching movies
+        cursor.execute("""
+            SELECT COUNT(*) AS total FROM Movies
+            WHERE title LIKE %s OR overview LIKE %s;
+        """, (f"%{search_query}%", f"%{search_query}%"))
+        total_movies = cursor.fetchone()['total']
+    else:
+        # Fetch all movies if no search query
+        cursor.execute("""
+            SELECT * FROM Movies
+            ORDER BY title ASC
+            LIMIT %s OFFSET %s;
+        """, (items_per_page, offset))
+        movies = cursor.fetchall()
+
+        # Count total movies
+        cursor.execute("SELECT COUNT(*) AS total FROM Movies;")
+        total_movies = cursor.fetchone()['total']
+
+    # Calculate total pages
+    total_pages = (total_movies + items_per_page - 1) // items_per_page
+
+    # Calculate start and end page for pagination
+    start_page = max(1, page - max_visible_pages // 2)
+    end_page = min(total_pages, start_page + max_visible_pages - 1)
+
+    # Adjust start_page if end_page is too small
+    if end_page - start_page + 1 < max_visible_pages:
+        start_page = max(1, end_page - max_visible_pages + 1)
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        "admin_dashboard.html",
+        movies=movies,
+        current_page=page,
+        total_pages=total_pages,
+        start_page=start_page,
+        end_page=end_page,
+        search_query=search_query
+    )
+
+# ----------------------------------
+# ADD MOVIE (admin only)
+# ----------------------------------
+@app.route("/admin/add_movie", methods=["POST"])
+def add_movie():
+    if 'user_role' not in session or session['user_role'] != 'admin':
+        flash("Access denied. Admins only.", "danger")
+        return redirect("/admin")
+
+    title = request.form.get("title").strip()
+    overview = request.form.get("overview", "").strip()
+    release_date = request.form.get("release_date")
+    budget = request.form.get("budget", 0)
+    language = request.form.get("language", "").strip()
+
+    if not title:
+        flash("Title is required!", "danger")
+        return redirect("/admin")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO Movies (title, overview, releaseDate, budget, language)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (title, overview, release_date, budget, language))
+        conn.commit()
+        flash("Movie added successfully!", "success")
+    except mysql.connector.Error as err:
+        flash(f"Error adding movie: {err}", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect("/admin")
+
+
+# ----------------------------------
+# UPDATE MOVIE (admin only)
+# ----------------------------------
+@app.route("/admin/update_movie/<int:movie_id>", methods=["POST"])
+def update_movie(movie_id):
+    if 'user_role' not in session or session['user_role'] != 'admin':
+        flash("Access denied. Admins only.", "danger")
+        return redirect("/admin")
+    
+    title = request.form.get("title")
+    overview = request.form.get("overview")
+    release_date = request.form.get("release_date")
+    budget = request.form.get("budget")
+    language = request.form.get("language")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            UPDATE Movies
+            SET title = %s, overview = %s, releaseDate = %s, budget = %s, language = %s
+            WHERE movieId = %s
+        """, (title, overview, release_date, budget, language, movie_id))
+        conn.commit()
+        flash("Movie updated successfully!", "success")
+    except mysql.connector.Error as err:
+        flash(f"Error: {err}", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect("/admin")
+
+# ----------------------------------
+# DELETE MOVIE (admin only)
+# ----------------------------------
+@app.route("/admin/delete_movie/<int:movie_id>", methods=["POST"])
+def delete_movie(movie_id):
+    if 'user_role' not in session or session['user_role'] != 'admin':
+        flash("Access denied. Admins only.", "danger")
+        return redirect("/admin")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM Movies WHERE movieId = %s", (movie_id,))
+        conn.commit()
+        flash("Movie deleted successfully!", "success")
+    except mysql.connector.Error as err:
+        flash(f"Error: {err}", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect("/admin")
     
 # ----------------------------------
 # MAIN

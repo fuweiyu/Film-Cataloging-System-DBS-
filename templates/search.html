@@ -143,11 +143,17 @@
             </form>
         </div>
         <!-- Hardcoded Fallback -->
-        {% if is_logged_in and username %}
-            <a href="/logout">Logout ({{ username }})</a>
-        {% else %}
-            <a href="/login">Sign In/Sign Up</a>
-        {% endif %}
+        <div style="display: flex; align-items: center; gap: 10px;"></divstyle>
+            {% if is_logged_in %}
+                <a href="/logout" style="text-decoration: none; padding: 5px 10px; background: #007BFF; color: white; border-radius: 5px;">Logout ({{ username }})</a>
+
+                {% if display_role %}
+                    <!-- Admin link to redirect to the Admin Dashboard -->
+                    <a href="/admin" style="text-decoration: none; padding: 5px 10px; background: #007BFF; color: white; border-radius: 5px;">Admin Dashboard</a>        {% endif %}
+            {% else %}
+                <a href="/login" style="text-decoration: none; padding: 5px 10px; background: #007BFF; color: white; border-radius: 5px;">Login/Sign Up</a>
+            {% endif %}
+        </div>
     </div>
 
 
