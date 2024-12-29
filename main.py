@@ -5,24 +5,26 @@ from datetime import datetime, timedelta #Get current time
 
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key"  # Replace with a secure, random value
+app.secret_key = "your_secret_key"
 
-# List of database configurations
+# ----------------------------------
+# DATABASE CONNECTION
+# ----------------------------------
+# List of database configurations:
 db_configs = [
-    {
-        'host': '172.17.0.2',     # Fallback host
-        'user': 'FernanShen',     # Fallback username
-        'password': '012002',     # Fallback password
-        'database': 'FilmCatalog' # Fallback database name
+    {   #Configuration 1
+        'host': '172.17.0.2',     
+        'user': 'FernanShen',     
+        'password': '012002',     
+        'database': 'FilmCatalog' 
     },
-    {
-        'host': 'localhost',     # Change to your MySQL host
-        'user': 'collaborator',  # Change to your MySQL username
-        'password': 'dbs2024',   # Change to your MySQL password
-        'database': 'FilmCatalog'# Change to your database name
+    {   #Configuration 2
+        'host': 'localhost',     # Fallback host
+        'user': 'collaborator',  # Fallback username
+        'password': 'dbs2024',   # Fallback password
+        'database': 'FilmCatalog'# Fallback database name
     }
 ]
-
 # Helper function to get a DB connection
 def get_db_connection():
     for config in db_configs:
@@ -156,7 +158,7 @@ def login():
 
         user_id = user_row["userId"]
         username = user_row["userName"]
-        user_role = user_row["userRole"]  # 'normal', 'admin', or 'moderator' (not used in your current logic)
+        user_role = user_row["userRole"]  # to determine whether a user is 'normal' or 'admin'
 
         # Validate password
         cursor.execute("SELECT passwordHash FROM UserPasswords WHERE userId = %s", (user_id,))
@@ -200,7 +202,9 @@ def logout():
     #flash("You have been logged out.", "info")
     return redirect("/")
 
-
+# ----------------------------------
+# SIGNUP
+# ----------------------------------
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
@@ -267,7 +271,6 @@ def signup():
 
     return render_template("signup.html")
 
-# FERNAN MODIFICO ESTA PARTE
 # ----------------------------------
 # SEARCH
 # ----------------------------------
@@ -318,8 +321,6 @@ def search():
 
     return render_template("search.html", query=query, search_results=combined_results, title_matches=title_matches, keyword_matches=keyword_matches, is_logged_in=is_logged_in, username=username)
 
-
-#This part was written by FRAN
 # ----------------------------------
 # MOVIE RATING / RATE DETAILS
 # ----------------------------------
@@ -368,7 +369,6 @@ def rate_movie(movie_id):
 
     return redirect(url_for('movie_detail', movie_id=movie_id))
 
-
 # ----------------------------------
 # MOVIE DETAILS
 # ----------------------------------
@@ -395,8 +395,9 @@ def movie_detail(movie_id):
         conn.close()
         flash("Movie not found!", "danger")
         return redirect("/search")
-
-    #----------------------------------------RATING CHANGES (BEGIN)
+    #                       #
+    # RATING CHANGES (BEGIN)#
+    #                       #
     # Fetch critic rating (voteAverage) from the movie data
     average_rating = movie.get('voteAverage', 0)
 
@@ -417,9 +418,9 @@ def movie_detail(movie_id):
         """, (movie_id, user_id))
         result = cursor.fetchone()
         user_rating = result['rating'] if result else None
-    #------------------------------RATING CHANGES (END)
-
-
+    #                    #
+    #RATING CHANGES (END)#
+    #                    #
     # Handle comment submission
     if request.method == "POST":
         user_id = session.get("user_id")
@@ -534,7 +535,7 @@ def edit_comment(comment_id):
 def delete_comment(comment_id):
     # Must be logged in
     if 'user_id' not in session:
-        flash("You must be logged in to delete a comment.", "warning")
+        #flash("You must be logged in to delete a comment.", "warning")
         return redirect("/login")
 
     user_id = session['user_id']

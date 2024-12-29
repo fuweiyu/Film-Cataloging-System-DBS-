@@ -237,7 +237,8 @@
 
                 {% if display_role %}
                     <!-- Admin link to redirect to the Admin Dashboard -->
-                    <a href="/admin" style="text-decoration: none; padding: 5px 10px; background: #007BFF; color: white; border-radius: 5px;">Admin Dashboard</a>        {% endif %}
+                    <a href="/admin" style="text-decoration: none; padding: 5px 10px; background: #007BFF; color: white; border-radius: 5px;">Admin Dashboard</a>
+				{% endif %}
             {% else %}
                 <a href="/login" style="text-decoration: none; padding: 5px 10px; background: #007BFF; color: white; border-radius: 5px;">Login/Sign Up</a>
             {% endif %}
@@ -249,10 +250,6 @@
         <h1>{{ movie['title'] }}</h1>
 
         <div class="details">
-            <!-- Debugging: Show if user is logged in -->
-            <!--
-            <p>Debugging: is_logged_in = {{ is_logged_in }}</p>
-            -->
             
             <p><span>Tagline:</span>
 				{% if movie['tagline'] %}
@@ -365,9 +362,9 @@
 							<p>{{ comment['commentText'] }}</p>
 
 							{% if is_logged_in and (username == comment['userName'] or user_role == 'admin') %}
-								<!-- Edit link -->
+								<!-- Edit -->
 								<a href="/movie/{{ movie['movieId'] }}?edit={{ comment['commentId'] }}" style="color: #1c44a3;">Edit</a>
-								<!-- Delete link: uses a small form or direct link -->
+								<!-- Delete -->
 								<form method="POST" action="/delete_comment/{{ comment['commentId'] }}" style="display:inline;">
 									<input type="hidden" name="movie_id" value="{{ movie['movieId'] }}">
 									<button type="submit" style="color: red; background: none; border: none; cursor: pointer; text-decoration: underline;"
