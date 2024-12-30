@@ -28,7 +28,7 @@ sql> SOURCE /your-path/Film-Cataloging-System-DBS-/queries/DBpopulation.sql;
 ```
 Note: The csv files must be in the specified path for mySQL to be able to load it 
 
-Create and grant privileges to the database connection:
+Create and grant privileges to the user whose credentials are used for the database connection:
 ```
 CREATE USER 'collaborator'@'localhost' IDENTIFIED BY 'dbs2024';
 GRANT ALL PRIVILEGES ON FilmCatalog.* TO 'collaborator'@'localhost';
