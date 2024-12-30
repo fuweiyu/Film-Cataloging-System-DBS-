@@ -6,14 +6,15 @@ Introduction to Database Systems' Final Project
 
 ## How to run the Application
 
-1. Requirements:
+
+1. Activate the environment 
+```
+source myenv/bin/activate
+```
+2. Requirements:
 Install mysql connector (ubuntu)
 ```
 pip install flask mysql-connector-python
-```
-2. Activate the environment 
-```
-source myenv/bin/activate
 ```
 3. Run the python script
 ```
