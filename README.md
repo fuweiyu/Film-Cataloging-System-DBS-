@@ -5,15 +5,21 @@ Introduction to Database Systems' Final Project
 ![Alt Text](static/nycuflix.png)
 
 ## How to run the Application
-1. Activate the environment 
+
+1. Requirements:
+Install mysql connector (ubuntu)
+```
+pip install flask mysql-connector-python
+```
+2. Activate the environment 
 ```
 source myenv/bin/activate
 ```
-2.  Run the python script
+3. Run the python script
 ```
 python3 main.py
 ```
-3. Go to the link provided in the console
+4. Go to the link provided in the console
 ### main.py
 The primary backend script for the application, built using Flask. It manages routes, user authentication, movie data retrieval, and CRUD operations. Also handles database connections using MySQL.
 - Key Features:
@@ -39,4 +45,4 @@ Folder which contains images to display in the design of the page
 - movie.html
 
 ### myenv folder
-Environment folder containing dependencies and configurations for running the Flask app. lask app.
+Environment folder containing dependencies and configurations for running the Flask app. 
