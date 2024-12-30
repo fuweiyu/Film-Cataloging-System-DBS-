@@ -38,7 +38,7 @@ FLUSH PRIVILEGES;
 ```
 python3 main.py
 ```
-4. Go to the link provided in the console
+5. Go to the link provided in the console
 ### main.py
 The primary backend script for the application, built using Flask. It manages routes, user authentication, movie data retrieval, and CRUD operations. Also handles database connections using MySQL.
 - Key Features:
