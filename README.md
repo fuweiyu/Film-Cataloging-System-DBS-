@@ -16,7 +16,25 @@ Install mysql connector (ubuntu)
 ```
 pip install flask mysql-connector-python
 ```
-3. Run the python script
+3. Set up the database
+open MySQL:
+```
+sudo mysql -u root -p
+```
+Create and grant privileges to the database connection:
+```
+CREATE USER 'collaborator'@'localhost' IDENTIFIED BY 'dbs2024';
+GRANT ALL PRIVILEGES ON FilmCatalog.* TO 'collaborator'@'localhost';
+FLUSH PRIVILEGES;
+```
+Create and populate the database
+```
+sql> SOURCE /your-path/Film-Cataloging-System-DBS-/queries/DBcreation.sql;
+sql> SOURCE /your-path/Film-Cataloging-System-DBS-/queries/DBpopulation.sql;
+```
+Note: The csv files must be in the specified path for mySQL to be able to load it 
+
+4. Run the python script
 ```
 python3 main.py
 ```
