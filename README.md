@@ -26,7 +26,7 @@ Create and populate the database
 sql> SOURCE /your-path/Film-Cataloging-System-DBS-/queries/DBcreation.sql;
 sql> SOURCE /your-path/Film-Cataloging-System-DBS-/queries/DBpopulation.sql;
 ```
-Note: The csv files must be in the specified path for mySQL to be able to load it 
+Note: The [csv files](https://drive.google.com/file/d/1W8I489hHKuglK2GIN0c0EeAG07wuuMAh/view?usp=drive_link) must be in the specified path for mySQL to be able to load it 
 
 Create and grant privileges to the user whose credentials are used for the database connection:
 ```
